@@ -35,7 +35,7 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(configService.get<string>('app.port') as string);
+  await app.listen(configService.get<string>('app.port') as string, '0.0.0.0');
 }
 bootstrap().catch((err) => {
   console.error('Failed to start application:', err);

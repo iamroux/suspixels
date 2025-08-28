@@ -676,7 +676,9 @@ class PixelCanvas {
     }
 
     connectWebSocket() {
-        const wsUrl = 'ws://localhost:3002';
+        const wsUrl = window.location.hostname === 'localhost'
+  ? 'ws://localhost:3002'
+  : 'ws://your-server-domain:3002';
 
         console.log('Connecting to WebSocket:', wsUrl);
         this.ws = new WebSocket(wsUrl);

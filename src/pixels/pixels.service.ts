@@ -26,7 +26,7 @@ export class PixelsService {
   private readonly PIXEL_GRID_KEY = 'pixel_grid';
   private readonly BATCH_SIZE = 100;
   private readonly BUFFER_TTL = 300; // 5 minutes
-  
+
   constructor(
     @InjectRepository(Pixel)
     private readonly pixelRepository: Repository<Pixel>,
