@@ -61,6 +61,31 @@ class PixelCanvas {
         this.render();
     }
 
+    getApiBaseUrl() {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocal) {
+            return 'http://localhost:3002';
+        }
+
+        const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+        const host = window.location.host;
+        // If frontend is served on 8000 (Dockerfile), backend is on 3002 on same host
+        const backendHost = host.replace(/:8000$/, ':3002');
+        return `${protocol}//${backendHost}`;
+    }
+
+    getWsUrl() {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocal) {
+            return 'ws://localhost:3002';
+        }
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        const backendHost = host.replace(/:8000$/, ':3002');
+        return `${wsProtocol}//${backendHost}`;
+    }
+
     initNameModal() {
         const modal = document.getElementById('name-modal');
         const input = document.getElementById('username-input');
@@ -139,7 +164,7 @@ class PixelCanvas {
             tableBody.innerHTML = ''; // Clear previous data
 
             try {
-                const response = await fetch('http://localhost:3002/api/pixels/leaderboard');
+                const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/leaderboard`);
                 if (!response.ok) throw new Error('Failed to fetch leaderboard');
                 const leaderboard = await response.json();
 
@@ -542,7 +567,7 @@ class PixelCanvas {
     }
 
     async sendPixelToServer(x, y, color) {
-        const response = await fetch('http://localhost:3002/api/pixels', {
+        const response = await fetch(`${this.getApiBaseUrl()}/api/pixels`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -561,7 +586,7 @@ class PixelCanvas {
     }
 
     async deletePixelFromServer(x, y) {
-        const response = await fetch('http://localhost:3002/api/pixels', {
+        const response = await fetch(`${this.getApiBaseUrl()}/api/pixels`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -676,9 +701,7 @@ class PixelCanvas {
     }
 
     connectWebSocket() {
-        const wsUrl = window.location.hostname === 'localhost'
-  ? 'ws://localhost:3002'
-  : 'ws://saqibmir.site:3002';
+        const wsUrl = this.getWsUrl();
 
         console.log('Connecting to WebSocket:', wsUrl);
         this.ws = new WebSocket(wsUrl);
@@ -743,7 +766,7 @@ class PixelCanvas {
 
     async loadPixels() {
         try {
-            const response = await fetch('http://localhost:3002/api/pixels');
+            const response = await fetch(`${this.getApiBaseUrl()}/api/pixels`);
             const pixels = await response.json();
 
             this.pixels.clear();

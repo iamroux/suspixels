@@ -7,10 +7,18 @@ import { WsAdapter } from '@nestjs/platform-ws';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    cors: true,
     bodyParser: true,
   });
   const configService = app.get(ConfigService);
+  const corsOrigins = configService.get<string[]>('app.corsOrigins') ?? [];
+  const enableAllOrigins = corsOrigins.length === 0;
+
+  app.enableCors({
+    origin: enableAllOrigins ? true : corsOrigins,
+    methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
+  });
 
   app.useWebSocketAdapter(new WsAdapter(app));
 
