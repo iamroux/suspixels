@@ -26,6 +26,11 @@ class PixelCanvas {
         this.pixelMetadata = new Map();
         this.recentColors = JSON.parse(localStorage.getItem('recentColors') || JSON.stringify(['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF']));
 
+        // Edit mode settings
+        this.isEditMode = false;
+        this.pendingChanges = new Map(); // Stores pending pixel changes in edit mode
+        this.originalPixels = new Map(); // Stores original pixel state before edit
+
         // WebSocket
         this.ws = null;
         this.connected = false;
@@ -137,8 +142,24 @@ class PixelCanvas {
     }
 
     setupEventListeners() {
+        // Mode toggle button
+        document.getElementById('mode-toggle-btn').addEventListener('click', () => {
+            this.toggleEditMode();
+        });
+
+        // Apply changes button
+        document.getElementById('apply-changes-btn').addEventListener('click', async () => {
+            await this.applyPendingChanges();
+        });
+
+        // Discard changes button
+        document.getElementById('discard-changes-btn').addEventListener('click', () => {
+            this.discardPendingChanges();
+        });
+
         // Eraser tool
         document.getElementById('eraser-btn').addEventListener('click', () => {
+            if (!this.isEditMode) return;
             this.isErasing = !this.isErasing;
             document.getElementById('eraser-btn').classList.toggle('active', this.isErasing);
             document.getElementById('selected-color').style.backgroundColor = this.isErasing ? 'transparent' : this.selectedColor;
@@ -554,16 +575,213 @@ class PixelCanvas {
         return x >= 0 && x < this.gridSize && y >= 0 && y < this.gridSize;
     }
 
-    async placePixel(x, y) {
-        try {
-            if (this.isErasing) {
-                await this.deletePixelFromServer(x, y);
-            } else {
-                await this.sendPixelToServer(x, y, this.selectedColor);
+    toggleEditMode() {
+        this.isEditMode = !this.isEditMode;
+        const modeBtn = document.getElementById('mode-toggle-btn');
+        const editActions = document.getElementById('edit-mode-actions');
+        const toolButtons = document.querySelectorAll('.tool-btn');
+
+        if (this.isEditMode) {
+            modeBtn.classList.remove('explore-mode');
+            modeBtn.classList.add('edit-mode');
+            modeBtn.querySelector('i').className = 'fas fa-edit';
+            modeBtn.querySelector('span').textContent = 'Edit Mode';
+            editActions.style.display = 'flex';
+            
+            // Enable tool buttons
+            toolButtons.forEach(btn => btn.removeAttribute('disabled'));
+        } else {
+            modeBtn.classList.remove('edit-mode');
+            modeBtn.classList.add('explore-mode');
+            modeBtn.querySelector('i').className = 'fas fa-eye';
+            modeBtn.querySelector('span').textContent = 'Explore Mode';
+            editActions.style.display = 'none';
+            
+            // Disable tool buttons
+            toolButtons.forEach(btn => btn.setAttribute('disabled', 'true'));
+            
+            // Clear any pending changes when exiting edit mode
+            if (this.pendingChanges.size > 0) {
+                const confirmed = confirm('You have unsaved changes. Do you want to discard them?');
+                if (!confirmed) {
+                    // Revert back to edit mode
+                    this.isEditMode = true;
+                    modeBtn.classList.remove('explore-mode');
+                    modeBtn.classList.add('edit-mode');
+                    modeBtn.querySelector('i').className = 'fas fa-edit';
+                    modeBtn.querySelector('span').textContent = 'Edit Mode';
+                    editActions.style.display = 'flex';
+                    toolButtons.forEach(btn => btn.removeAttribute('disabled'));
+                    return;
+                }
+                this.discardPendingChanges();
             }
+        }
+    }
+
+    async placePixel(x, y) {
+        if (!this.isEditMode) {
+            return; // Can't place pixels in explore mode
+        }
+
+        try {
+            const pixelKey = `${x},${y}`;
+            
+            if (this.isErasing) {
+                // Store original pixel if it exists and not already stored
+                if (!this.originalPixels.has(pixelKey) && this.pixels.has(pixelKey)) {
+                    this.originalPixels.set(pixelKey, {
+                        color: this.pixels.get(pixelKey),
+                        metadata: this.pixelMetadata.get(pixelKey)
+                    });
+                }
+                
+                // Mark for deletion
+                this.pendingChanges.set(pixelKey, { action: 'delete' });
+                this.deletePixelLocally(x, y);
+            } else {
+                // Store original pixel if not already stored
+                if (!this.originalPixels.has(pixelKey)) {
+                    if (this.pixels.has(pixelKey)) {
+                        this.originalPixels.set(pixelKey, {
+                            color: this.pixels.get(pixelKey),
+                            metadata: this.pixelMetadata.get(pixelKey)
+                        });
+                    } else {
+                        this.originalPixels.set(pixelKey, null);
+                    }
+                }
+                
+                // Add to pending changes
+                this.pendingChanges.set(pixelKey, {
+                    action: 'set',
+                    color: this.selectedColor,
+                    x,
+                    y
+                });
+                this.updatePixelLocally(x, y, this.selectedColor);
+            }
+            
+            this.updatePendingChangesCount();
         } catch (error) {
             console.error('Failed to place pixel:', error);
         }
+    }
+
+    updatePendingChangesCount() {
+        const count = this.pendingChanges.size;
+        const countElement = document.getElementById('pending-count');
+        countElement.textContent = count === 1 ? '1 change' : `${count} changes`;
+        
+        // Enable/disable apply button based on pending changes
+        const applyBtn = document.getElementById('apply-changes-btn');
+        const discardBtn = document.getElementById('discard-changes-btn');
+        applyBtn.disabled = count === 0;
+        discardBtn.disabled = count === 0;
+    }
+
+    async applyPendingChanges() {
+        if (this.pendingChanges.size === 0) return;
+
+        const applyBtn = document.getElementById('apply-changes-btn');
+        applyBtn.disabled = true;
+        applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Applying...</span>';
+
+        try {
+            // Build batch operations array
+            const operations = [];
+            for (const [pixelKey, change] of this.pendingChanges) {
+                if (change.action === 'set') {
+                    operations.push({
+                        action: 'set',
+                        data: {
+                            x: change.x,
+                            y: change.y,
+                            color: change.color,
+                            insertedBy: this.userName
+                        }
+                    });
+                } else if (change.action === 'delete') {
+                    const [x, y] = pixelKey.split(',').map(Number);
+                    operations.push({
+                        action: 'delete',
+                        data: { x, y }
+                    });
+                }
+            }
+
+            console.log(`🚀 Batch applying ${operations.length} changes in ONE request`);
+
+            // Send single batch request
+            const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/batch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ operations })
+            });
+
+            if (!response.ok) {
+                throw new Error('Batch operation failed');
+            }
+
+            const result = await response.json();
+            console.log(`✅ Batch complete: ${result.success} successful, ${result.failed} failed`);
+
+            // Clear pending changes
+            this.pendingChanges.clear();
+            this.originalPixels.clear();
+            this.updatePendingChangesCount();
+
+            applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Applied!</span>';
+            setTimeout(() => {
+                applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span>';
+            }, 2000);
+        } catch (error) {
+            console.error('Failed to apply changes:', error);
+            alert('Failed to apply some changes. Please try again.');
+            applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span>';
+            applyBtn.disabled = false;
+        }
+    }
+
+    discardPendingChanges() {
+        // Restore original pixels
+        for (const [pixelKey, original] of this.originalPixels) {
+            const [x, y] = pixelKey.split(',').map(Number);
+            if (original === null) {
+                // Pixel didn't exist before, remove it
+                this.deletePixelLocally(x, y);
+            } else {
+                // Restore original pixel
+                this.updatePixelLocally(x, y, original.color, original.metadata);
+            }
+        }
+
+        this.pendingChanges.clear();
+        this.originalPixels.clear();
+        this.updatePendingChangesCount();
+        this.render();
+    }
+
+    updatePixelLocally(x, y, color, metadata = null) {
+        this.pixels.set(`${x},${y}`, color);
+
+        if (metadata) {
+            this.pixelMetadata.set(`${x},${y}`, metadata);
+        } else if (this.pixelMetadata.has(`${x},${y}`)) {
+            const existing = this.pixelMetadata.get(`${x},${y}`);
+            existing.color = color;
+            this.pixelMetadata.set(`${x},${y}`, existing);
+        }
+
+        this.renderPixel(x, y, color);
+    }
+
+    deletePixelLocally(x, y) {
+        this.pixels.delete(`${x},${y}`);
+        this.pixelMetadata.delete(`${x},${y}`);
+        this.clearPixel(x, y);
     }
 
     async sendPixelToServer(x, y, color) {
@@ -600,22 +818,34 @@ class PixelCanvas {
     }
 
     updatePixel(x, y, color, metadata = null) {
-        this.pixels.set(`${x},${y}`, color);
+        // Only update from WebSocket if not in edit mode or if not a pending change
+        const pixelKey = `${x},${y}`;
+        if (this.isEditMode && this.pendingChanges.has(pixelKey)) {
+            return; // Don't override pending changes
+        }
+
+        this.pixels.set(pixelKey, color);
 
         if (metadata) {
-            this.pixelMetadata.set(`${x},${y}`, metadata);
-        } else if (this.pixelMetadata.has(`${x},${y}`)) {
-            const existing = this.pixelMetadata.get(`${x},${y}`);
+            this.pixelMetadata.set(pixelKey, metadata);
+        } else if (this.pixelMetadata.has(pixelKey)) {
+            const existing = this.pixelMetadata.get(pixelKey);
             existing.color = color;
-            this.pixelMetadata.set(`${x},${y}`, existing);
+            this.pixelMetadata.set(pixelKey, existing);
         }
 
         this.renderPixel(x, y, color);
     }
 
     deletePixel(x, y) {
-        this.pixels.delete(`${x},${y}`);
-        this.pixelMetadata.delete(`${x},${y}`);
+        // Only update from WebSocket if not in edit mode or if not a pending change
+        const pixelKey = `${x},${y}`;
+        if (this.isEditMode && this.pendingChanges.has(pixelKey)) {
+            return; // Don't override pending changes
+        }
+
+        this.pixels.delete(pixelKey);
+        this.pixelMetadata.delete(pixelKey);
         this.clearPixel(x, y);
     }
 
@@ -690,8 +920,18 @@ class PixelCanvas {
     renderPixel(gridX, gridY, color) {
         const screenPos = this.gridToScreen(gridX, gridY);
         const size = this.pixelSize * this.zoom;
+        const pixelKey = `${gridX},${gridY}`;
+        
+        // Draw the pixel
         this.ctx.fillStyle = color;
         this.ctx.fillRect(screenPos.x, screenPos.y, size, size);
+
+        // Add a border for pending changes in edit mode
+        if (this.isEditMode && this.pendingChanges.has(pixelKey)) {
+            this.ctx.strokeStyle = '#FFD700'; // Gold border for pending changes
+            this.ctx.lineWidth = Math.max(1, size * 0.1);
+            this.ctx.strokeRect(screenPos.x, screenPos.y, size, size);
+        }
     }
 
     clearPixel(gridX, gridY) {

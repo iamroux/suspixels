@@ -7,16 +7,18 @@ import {
   SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server, WebSocket } from 'ws';
+import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
+  cors: true,
+  transports: ['websocket', 'polling'],
 })
 export class WebsocketGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly logger = new Logger(WebsocketGateway.name);
+  
+  constructor(private readonly configService: ConfigService) {}
 
   @WebSocketServer()
   server: Server;

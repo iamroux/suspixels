@@ -17,7 +17,7 @@ async function bootstrap() {
     origin: enableAllOrigins ? true : corsOrigins,
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false,
+    credentials: true,
   });
 
   app.useWebSocketAdapter(new WsAdapter(app));

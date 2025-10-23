@@ -22,6 +22,12 @@
                 </div>
             </div>
             <div class="header-right">
+                <div class="mode-toggle-container">
+                    <button id="mode-toggle-btn" class="mode-toggle-btn explore-mode">
+                        <i class="fas fa-eye"></i>
+                        <span>Explore Mode</span>
+                    </button>
+                </div>
                 <div class="stats">
                     <div class="stat-item" id="zoom-level">
                         <i class="fas fa-search"></i>
@@ -38,11 +44,11 @@
         <div class="main-content">
             <div class="toolbar">
                 <div class="tool-section">
-                    <button id="eraser-btn" class="tool-btn">
+                    <button id="eraser-btn" class="tool-btn" disabled>
                         <i class="fas fa-eraser"></i>
                         <span>Eraser</span>
                     </button>
-                    <button id="color-picker-btn" class="tool-btn">
+                    <button id="color-picker-btn" class="tool-btn" disabled>
                         <i class="fas fa-eye-dropper"></i>
                         <span>Pick Color</span>
                     </button>
@@ -50,9 +56,22 @@
                         <div class="color-label">Selected:</div>
                         <div id="selected-color" style="background-color: #000000;"></div>
                     </div>
-                    <button id="color-wheel-btn" class="tool-btn">
+                    <button id="color-wheel-btn" class="tool-btn" disabled>
                         <i class="fas fa-palette"></i>
                         <span>Color Picker</span>
+                    </button>
+                </div>
+                <div class="edit-mode-actions" id="edit-mode-actions" style="display: none;">
+                    <div class="pending-changes-info">
+                        <span id="pending-count">0 changes</span>
+                    </div>
+                    <button id="apply-changes-btn" class="action-btn apply-btn">
+                        <i class="fas fa-check"></i>
+                        <span>Apply</span>
+                    </button>
+                    <button id="discard-changes-btn" class="action-btn discard-btn">
+                        <i class="fas fa-times"></i>
+                        <span>Discard</span>
                     </button>
                 </div>
             </div>

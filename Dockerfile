@@ -15,6 +15,10 @@ RUN npm run build
 FROM node:23.9.0-alpine AS runner
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
+
+# Install wget for health checks
+RUN apk add --no-cache wget
+
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/frontend ./frontend
 COPY package*.json ./
