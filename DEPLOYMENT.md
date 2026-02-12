@@ -67,13 +67,13 @@ This guide will help you deploy Suspixels in both local and production environme
    DATABASE_PASSWORD=<strong_password_here>
    DATABASE_NAME=pixel_canvas
    # Important: Set to false in production!
-   DATABASE_SYNCHRONIZE=false
+   DATABASE_SYNCHRONIZE=true
    REDIS_HOST=redis
    REDIS_PORT=6379
    ```
 
 2. **Important Production Settings:**
-   - Set `DATABASE_SYNCHRONIZE=false` (run migrations manually)
+   - Set `DATABASE_SYNCHRONIZE=true` (tables created automatically)
    - Use strong passwords
    - Configure proper CORS origins
    - Use HTTPS/WSS in production
