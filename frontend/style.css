@@ -585,17 +585,18 @@ body {
         right: 15px;
     }
 
-    /* Make UI stack on mobile */
+    /* Make UI ultra-compact on mobile */
     .header {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
         padding: 0.5rem;
         gap: 0.5rem;
+        justify-content: center;
     }
     
     .header-left, .header-right {
-        width: 100%;
-        justify-content: space-between;
+        width: auto;
+        gap: 0.75rem;
     }
 
     .stats {
@@ -605,48 +606,94 @@ body {
     .toolbar {
         padding: 0.5rem;
         top: auto;
-        bottom: 90px; /* Above the footer */
+        bottom: 10px;
         left: 50%;
         transform: translateX(-50%);
-        width: calc(100% - 1rem);
+        width: max-content;
+        max-width: 95vw;
+        border-radius: 20px;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
     }
 
     .tool-section {
         flex-direction: row;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: center;
         gap: 0.5rem;
     }
 
     .mode-toggle-container {
-        width: 100%;
+        width: auto;
     }
 
-    .mode-toggle-btn {
-        width: 100%;
+    .mode-toggle-btn span, .tool-btn span, .action-btn span, .footer-btn span {
+        display: none; /* Hide text on mobile to save space */
+    }
+    
+    .mode-toggle-btn i, .tool-btn i, .action-btn i, .footer-btn i {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .mode-toggle-btn, .tool-btn, .action-btn, .footer-btn {
+        padding: 0.5rem;
+        aspect-ratio: 1;
         justify-content: center;
+        border-radius: 50%;
     }
 
     .edit-mode-actions {
-        margin-left: 0;
-        padding-left: 0;
-        border-left: none;
-        border-top: 1px solid var(--border-light);
-        padding-top: 0.5rem;
-        width: 100%;
-        justify-content: space-between;
+        margin-left: 0.5rem;
+        padding-left: 0.5rem;
+        border-top: none;
+        border-left: 1px solid var(--border-light);
+        padding-top: 0;
+        width: auto;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .pending-changes-info {
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+    
+    .color-label {
+        display: none;
     }
 
     .footer {
+        top: 60px;
+        right: 10px;
+        bottom: auto;
+        left: auto;
+        width: auto;
+        background: none;
+        border: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        padding: 0;
         flex-direction: column;
         gap: 0.5rem;
-        padding: 0.5rem;
+    }
+    
+    .footer-right {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .footer-btn {
+        background-color: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-light);
     }
 
     .instructions {
-        flex-direction: column;
-        gap: 0.25rem;
-        align-items: flex-start;
+        display: none; /* Hide instructions completely to save space */
     }
 }
 
