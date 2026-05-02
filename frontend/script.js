@@ -68,7 +68,7 @@ class PixelCanvas {
 
     getApiBaseUrl() {
         // Change this once you have your Render backend URL (e.g., 'https://suspixels-api.onrender.com')
-        const prodApiUrl = ''; 
+        const prodApiUrl = 'https://suspixels-api.onrender.com'; 
         if (prodApiUrl) return prodApiUrl;
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -85,7 +85,7 @@ class PixelCanvas {
 
     getWsUrl() {
         // Change this once you have your Render backend URL (e.g., 'wss://suspixels-api.onrender.com')
-        const prodWsUrl = ''; 
+        const prodWsUrl = 'wss://suspixels-api.onrender.com'; 
         if (prodWsUrl) return prodWsUrl;
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -416,6 +416,10 @@ class PixelCanvas {
         } else if (this.touches.length === 2) {
             this.lastTouchDistance = this.getTouchDistance();
             this.touchStartTime = null;
+            const centerX = (this.touches[0].clientX + this.touches[1].clientX) / 2;
+            const centerY = (this.touches[0].clientY + this.touches[1].clientY) / 2;
+            const rect = this.canvas.getBoundingClientRect();
+            this.startPan(centerX - rect.left, centerY - rect.top);
         }
     }
 
@@ -436,27 +440,40 @@ class PixelCanvas {
                 Math.pow(y - this.touchStartY, 2)
             );
 
-            if (moveDistance > 10) {
+            if (moveDistance > 5) {
                 this.touchMoved = true;
 
-                if (!this.isPanning) {
-                    this.startPan(this.touchStartX, this.touchStartY);
+                if (this.isEditMode) {
+                    const gridPos = this.screenToGrid(x, y);
+                    if (this.isValidGridPosition(gridPos.x, gridPos.y)) {
+                        this.placePixel(gridPos.x, gridPos.y);
+                    }
+                } else {
+                    if (!this.isPanning) {
+                        this.startPan(this.touchStartX, this.touchStartY);
+                    }
+                    this.updatePan(x, y);
                 }
-
-                this.updatePan(x, y);
             }
         } else if (this.touches.length === 2) {
             const currentDistance = this.getTouchDistance();
+            const centerX = (this.touches[0].clientX + this.touches[1].clientX) / 2;
+            const centerY = (this.touches[0].clientY + this.touches[1].clientY) / 2;
+            const rect = this.canvas.getBoundingClientRect();
+
             if (this.lastTouchDistance > 0) {
                 const scale = currentDistance / this.lastTouchDistance;
-
-                const centerX = (this.touches[0].clientX + this.touches[1].clientX) / 2;
-                const centerY = (this.touches[0].clientY + this.touches[1].clientY) / 2;
-                const rect = this.canvas.getBoundingClientRect();
-
                 this.zoomAt(centerX - rect.left, centerY - rect.top, scale);
             }
+            
+            if (!this.isPanning) {
+                this.startPan(centerX - rect.left, centerY - rect.top);
+            } else {
+                this.updatePan(centerX - rect.left, centerY - rect.top);
+            }
+            
             this.lastTouchDistance = currentDistance;
+            this.touchMoved = true;
         }
     }
 
@@ -469,9 +486,11 @@ class PixelCanvas {
         if (this.touches.length === 0) {
             if (this.isPanning) {
                 this.endPan();
-            } else if (!this.touchMoved && this.touchStartTime) {
+            }
+            
+            if (!this.touchMoved && this.touchStartTime) {
                 const timeDiff = Date.now() - this.touchStartTime;
-                if (timeDiff < 300) {
+                if (timeDiff < 500) { // Increased tap tolerance for mobile
                     const gridPos = this.screenToGrid(this.touchStartX, this.touchStartY);
                     if (this.isValidGridPosition(gridPos.x, gridPos.y)) {
                         this.placePixel(gridPos.x, gridPos.y);
@@ -484,6 +503,16 @@ class PixelCanvas {
             this.lastTouchDistance = 0;
         } else if (this.touches.length < 2) {
             this.lastTouchDistance = 0;
+            if (this.isPanning) {
+                this.endPan();
+            }
+            // If dropping from 2 fingers to 1, reset touch start for the remaining finger
+            if (this.touches.length === 1) {
+                const touch = this.touches[0];
+                const rect = this.canvas.getBoundingClientRect();
+                this.touchStartX = touch.clientX - rect.left;
+                this.touchStartY = touch.clientY - rect.top;
+            }
         }
     }
 
@@ -527,12 +556,27 @@ class PixelCanvas {
         const newZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * scale));
 
         if (newZoom !== this.zoom) {
-            const gridPos = this.screenToGrid(x, y);
-            this.zoom = newZoom;
-            const newScreenPos = this.gridToScreen(gridPos.x, gridPos.y);
+            // Get exact continuous world coordinates to avoid snapping/drifting
+            const canvasWidth1 = this.gridSize * this.pixelSize * this.zoom;
+            const canvasHeight1 = this.gridSize * this.pixelSize * this.zoom;
+            const centerX1 = (this.canvas.width - canvasWidth1) / 2;
+            const centerY1 = (this.canvas.height - canvasHeight1) / 2;
+            
+            const worldX = (x - centerX1 - this.viewportX) / this.zoom;
+            const worldY = (y - centerY1 - this.viewportY) / this.zoom;
 
-            this.viewportX += (x - newScreenPos.x);
-            this.viewportY += (y - newScreenPos.y);
+            this.zoom = newZoom;
+
+            const canvasWidth2 = this.gridSize * this.pixelSize * this.zoom;
+            const canvasHeight2 = this.gridSize * this.pixelSize * this.zoom;
+            const centerX2 = (this.canvas.width - canvasWidth2) / 2;
+            const centerY2 = (this.canvas.height - canvasHeight2) / 2;
+
+            const newScreenX = centerX2 + (worldX * this.zoom) + this.viewportX;
+            const newScreenY = centerY2 + (worldY * this.zoom) + this.viewportY;
+
+            this.viewportX += (x - newScreenX);
+            this.viewportY += (y - newScreenY);
 
             this.clampOffsets();
 
