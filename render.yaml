@@ -14,6 +14,10 @@ services:
         value: postgres
       - key: DATABASE_URL
         value: postgresql://suspixels:Gtr7dtv6wfXfSGRaAW4TdFg1gxctxJ1z@dpg-d7r3u7km0tmc73837dm0-a.singapore-postgres.render.com/suspixels
+      - key: DATABASE_SSL_ENABLED
+        value: 'true'
+      - key: DATABASE_REJECT_UNAUTHORIZED
+        value: 'false'
       - key: REDIS_URL
         value: redis://default:W4MiZkoR9Cj86lhc9qYIHdEbW7u2ei2D@redis-15545.crce280.asia-south1-1.gcp.cloud.redislabs.com:15545
       - key: APP_CORS_ORIGINS
