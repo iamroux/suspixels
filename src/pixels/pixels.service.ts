@@ -34,14 +34,23 @@ export class PixelsService {
     private readonly websocketGateway: WebsocketGateway,
     private readonly configService: ConfigService,
   ) {
-    this.redisClient = new Redis({
-      host: this.configService.get<string>('redis.host') || 'localhost',
-      port: this.configService.get<number>('redis.port') || 6379,
+    const redisUrl = this.configService.get<string>('redis.url');
+    const options = {
       maxRetriesPerRequest: 3,
       connectTimeout: 10000,
       commandTimeout: 5000,
       lazyConnect: true,
-    });
+    };
+    
+    if (redisUrl) {
+      this.redisClient = new Redis(redisUrl, options);
+    } else {
+      this.redisClient = new Redis({
+        ...options,
+        host: this.configService.get<string>('redis.host') || 'localhost',
+        port: this.configService.get<number>('redis.port') || 6379,
+      });
+    }
   }
 
   async onModuleInit() {

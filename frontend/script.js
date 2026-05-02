@@ -67,6 +67,10 @@ class PixelCanvas {
     }
 
     getApiBaseUrl() {
+        // Change this once you have your Render backend URL (e.g., 'https://suspixels-api.onrender.com')
+        const prodApiUrl = ''; 
+        if (prodApiUrl) return prodApiUrl;
+
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         if (isLocal) {
             return 'http://localhost:3002';
@@ -80,6 +84,10 @@ class PixelCanvas {
     }
 
     getWsUrl() {
+        // Change this once you have your Render backend URL (e.g., 'wss://suspixels-api.onrender.com')
+        const prodWsUrl = ''; 
+        if (prodWsUrl) return prodWsUrl;
+
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         if (isLocal) {
             return 'ws://localhost:3002';

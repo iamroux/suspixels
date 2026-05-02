@@ -8,10 +8,15 @@ export class RedisService {
   private readonly redisClient: Redis;
 
   constructor(private readonly configService: ConfigService) {
-    this.redisClient = new Redis({
-      host: this.configService.get<string>('REDIS_HOST'),
-      port: this.configService.get<number>('REDIS_PORT'),
-    });
+    const redisUrl = this.configService.get<string>('redis.url') || this.configService.get<string>('REDIS_URL');
+    if (redisUrl) {
+      this.redisClient = new Redis(redisUrl);
+    } else {
+      this.redisClient = new Redis({
+        host: this.configService.get<string>('REDIS_HOST'),
+        port: this.configService.get<number>('REDIS_PORT'),
+      });
+    }
   }
 
   async testFunction() {
