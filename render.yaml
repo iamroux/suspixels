@@ -18,6 +18,8 @@ services:
         value: 'true'
       - key: DATABASE_REJECT_UNAUTHORIZED
         value: 'false'
+      - key: DATABASE_SYNCHRONIZE
+        value: 'true'
       - key: REDIS_URL
         value: redis://default:W4MiZkoR9Cj86lhc9qYIHdEbW7u2ei2D@redis-15545.crce280.asia-south1-1.gcp.cloud.redislabs.com:15545
       - key: APP_CORS_ORIGINS
