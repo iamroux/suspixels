@@ -166,6 +166,11 @@ class PixelCanvas {
             this.discardPendingChanges();
         });
 
+        // Undo last change button
+        document.getElementById('undo-btn').addEventListener('click', () => {
+            this.undoPendingChange();
+        });
+
         // Eraser tool
         document.getElementById('eraser-btn').addEventListener('click', () => {
             if (!this.isEditMode) return;
@@ -733,11 +738,43 @@ class PixelCanvas {
         const countElement = document.getElementById('pending-count');
         countElement.textContent = count === 1 ? '1 change' : `${count} changes`;
         
-        // Enable/disable apply button based on pending changes
+        // Enable/disable apply, discard, and undo buttons based on pending changes
         const applyBtn = document.getElementById('apply-changes-btn');
         const discardBtn = document.getElementById('discard-changes-btn');
+        const undoBtn = document.getElementById('undo-btn');
         applyBtn.disabled = count === 0;
         discardBtn.disabled = count === 0;
+        undoBtn.disabled = count === 0;
+    }
+
+    undoPendingChange() {
+        if (this.pendingChanges.size === 0) return;
+
+        // Get the last inserted key in the Map
+        const keys = Array.from(this.pendingChanges.keys());
+        const lastKey = keys[keys.length - 1];
+        
+        // Remove from pending changes
+        this.pendingChanges.delete(lastKey);
+
+        // Revert visually
+        const [x, y] = lastKey.split(',').map(Number);
+        const original = this.originalPixels.get(lastKey);
+
+        if (original === null) {
+            // Pixel didn't exist before, so delete it locally
+            this.deletePixelLocally(x, y);
+        } else if (original) {
+            // Restore original pixel
+            this.updatePixelLocally(x, y, original.color, original.metadata);
+        }
+
+        // We don't need to remove it from originalPixels, because if they edit it again, 
+        // originalPixels already correctly stores what it was originally.
+        // However, to keep memory clean, if they reverted the ONLY change to this pixel,
+        // we could delete it, but leaving it is harmless and safer.
+
+        this.updatePendingChangesCount();
     }
 
     async applyPendingChanges() {

@@ -569,20 +569,20 @@ body {
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     .chat-widget {
-        bottom: 15px;
-        right: 15px;
+        bottom: 90px !important;
+        right: 15px !important;
     }
     
     .chat-toggle {
-        width: 50px;
-        height: 50px;
+        width: 44px !important;
+        height: 44px !important;
     }
     
     .chat-container {
-        width: calc(100vw - 30px);
-        height: 400px;
-        bottom: 65px;
-        right: 15px;
+        width: calc(100vw - 30px) !important;
+        height: 400px !important;
+        bottom: 140px !important;
+        right: 15px !important;
     }
 
     /* Make UI ultra-compact on mobile */
@@ -605,23 +605,23 @@ body {
 
     .toolbar {
         padding: 0.5rem;
-        top: auto;
-        bottom: 10px;
+        top: auto !important;
+        bottom: 15px !important;
         left: 50%;
         transform: translateX(-50%);
-        width: max-content;
-        max-width: 95vw;
-        border-radius: 20px;
-        flex-direction: row;
-        flex-wrap: nowrap;
+        width: max-content !important;
+        max-width: 96vw;
+        border-radius: 2rem;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         overflow-x: auto;
     }
 
     .tool-section {
-        flex-direction: row;
-        flex-wrap: nowrap;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.25rem !important;
     }
 
     .mode-toggle-container {
@@ -629,35 +629,42 @@ body {
     }
 
     .mode-toggle-btn span, .tool-btn span, .action-btn span, .footer-btn span {
-        display: none; /* Hide text on mobile to save space */
+        display: none !important; /* Hide text on mobile to save space */
     }
     
     .mode-toggle-btn i, .tool-btn i, .action-btn i, .footer-btn i {
         margin: 0;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
     }
 
     .mode-toggle-btn, .tool-btn, .action-btn, .footer-btn {
-        padding: 0.5rem;
-        aspect-ratio: 1;
-        justify-content: center;
-        border-radius: 50%;
+        padding: 0 !important;
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 50% !important;
+        aspect-ratio: auto !important;
     }
 
     .edit-mode-actions {
-        margin-left: 0.5rem;
-        padding-left: 0.5rem;
-        border-top: none;
-        border-left: 1px solid var(--border-light);
-        padding-top: 0;
-        width: auto;
-        flex-direction: row;
-        gap: 0.5rem;
+        margin-left: 0.25rem !important;
+        padding-left: 0.25rem !important;
+        border-top: none !important;
+        border-left: 1px solid var(--border-light) !important;
+        padding-top: 0 !important;
+        width: auto !important;
+        flex-direction: row !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.25rem !important;
     }
 
     .pending-changes-info {
-        font-size: 0.75rem;
-        white-space: nowrap;
+        display: none !important; /* Hide the text to make room for buttons */
     }
     
     .color-label {
