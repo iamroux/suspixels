@@ -78,21 +78,29 @@ body {
 }
 
 .app-container {
-    display: flex;
-    flex-direction: column;
+    position: relative;
     height: 100vh;
+    width: 100vw;
+    overflow: hidden;
 }
 
 /* Header Styles */
 .header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     padding: 0.75rem 1.5rem;
-    background-color: var(--bg-secondary);
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-sm);
     border-bottom: 1px solid var(--border-light);
     z-index: 50;
+    pointer-events: auto;
 }
 
 .header-left {
@@ -167,21 +175,33 @@ body {
 
 /* Main Content */
 .main-content {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
 }
 
 /* Toolbar Styles */
 .toolbar {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--bg-secondary);
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    border-bottom: 1px solid var(--border-light);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
     z-index: 40;
+    pointer-events: auto;
+    width: max-content;
 }
 
 .tool-section {
@@ -353,10 +373,13 @@ body {
 
 /* Canvas Container */
 .canvas-container {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-    background-color: white;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #e5e5e5;
+    z-index: 10;
 }
 
 #pixel-canvas {
@@ -374,18 +397,25 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 10;
+    z-index: 20;
 }
 
 /* Footer Styles */
 .footer {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--bg-secondary);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 0.5rem 1.5rem;
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-top: 1px solid var(--border-light);
     z-index: 30;
+    pointer-events: auto;
 }
 
 .instructions {
@@ -574,11 +604,17 @@ body {
 
     .toolbar {
         padding: 0.5rem;
+        top: auto;
+        bottom: 90px; /* Above the footer */
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 1rem);
     }
 
     .tool-section {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
         gap: 0.5rem;
     }
 
