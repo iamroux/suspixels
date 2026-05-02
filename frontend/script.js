@@ -28,6 +28,7 @@ class PixelCanvas {
 
         // Edit mode settings
         this.isEditMode = false;
+        this.isContinuousDraw = false;
         this.pendingChanges = new Map(); // Stores pending pixel changes in edit mode
         this.originalPixels = new Map(); // Stores original pixel state before edit
 
@@ -171,6 +172,13 @@ class PixelCanvas {
             this.isErasing = !this.isErasing;
             document.getElementById('eraser-btn').classList.toggle('active', this.isErasing);
             document.getElementById('selected-color').style.backgroundColor = this.isErasing ? 'transparent' : this.selectedColor;
+        });
+
+        // Continuous Draw tool (Mobile)
+        document.getElementById('continuous-draw-btn').addEventListener('click', () => {
+            if (!this.isEditMode) return;
+            this.isContinuousDraw = !this.isContinuousDraw;
+            document.getElementById('continuous-draw-btn').classList.toggle('active', this.isContinuousDraw);
         });
 
         // Mouse events
@@ -443,7 +451,7 @@ class PixelCanvas {
             if (moveDistance > 5) {
                 this.touchMoved = true;
 
-                if (this.isEditMode) {
+                if (this.isEditMode && this.isContinuousDraw) {
                     const gridPos = this.screenToGrid(x, y);
                     if (this.isValidGridPosition(gridPos.x, gridPos.y)) {
                         this.placePixel(gridPos.x, gridPos.y);

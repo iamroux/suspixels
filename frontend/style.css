@@ -614,6 +614,12 @@ body {
     }
 }
 
+@media (min-width: 769px) {
+    .mobile-only-tool {
+        display: none !important;
+    }
+}
+
 @media (max-width: 480px) {
     .chat-container {
         height: 350px;
