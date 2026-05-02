@@ -86,7 +86,7 @@ body {
 
 /* Header Styles */
 .header {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -101,6 +101,8 @@ body {
     border-bottom: 1px solid var(--border-light);
     z-index: 50;
     pointer-events: auto;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .header-left {
@@ -1095,35 +1097,6 @@ body {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-    .header {
-        padding: 0.75rem 1rem;
-    }
-    
-    .header-left {
-        gap: 1rem;
-    }
-
-    .header-right {
-        gap: 1rem;
-    }
-    
-    .stats {
-        gap: 1rem;
-    }
-    
-    .toolbar {
-        padding: 0.75rem 1rem;
-        flex-direction: column;
-    }
-
-    .edit-mode-actions {
-        margin-left: 0;
-        padding-left: 0;
-        border-left: none;
-        border-top: 1px solid var(--border-light);
-        padding-top: 0.75rem;
-        width: 100%;
-    }
     
     .instructions {
         gap: 1rem;
