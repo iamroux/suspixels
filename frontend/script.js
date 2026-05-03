@@ -63,10 +63,29 @@ class PixelCanvas {
         this.setupEventListeners();
         this.setupColorPicker();
         this.initUsersPopover();
+        this.initColdStartBanner();
         this.connectWebSocket();
         this.loadPixels();
         this.centerCanvas();
         this.render();
+    }
+
+    initColdStartBanner() {
+        const banner = document.getElementById('cold-start-banner');
+        const dismiss = document.getElementById('cold-start-dismiss');
+        if (!banner || !dismiss) return;
+        this._coldStartHidden = false;
+        const hide = () => {
+            if (this._coldStartHidden) return;
+            this._coldStartHidden = true;
+            banner.hidden = true;
+        };
+        this._hideColdStartBanner = hide;
+        dismiss.addEventListener('click', hide);
+        // Show only if backend hasn't responded within 1.5s.
+        this._coldStartTimer = setTimeout(() => {
+            if (!this._coldStartHidden) banner.hidden = false;
+        }, 1500);
     }
 
     getApiBaseUrl() {
@@ -1116,6 +1135,7 @@ class PixelCanvas {
             this.connected = true;
             this.updateConnectionStatus();
             this.sendIdentify();
+            if (this._hideColdStartBanner) this._hideColdStartBanner();
         };
 
         this.ws.onclose = () => {
@@ -1277,6 +1297,7 @@ class PixelCanvas {
             });
 
             this.render();
+            if (this._hideColdStartBanner) this._hideColdStartBanner();
         } catch (error) {
             console.error('Failed to load pixels:', error);
         }

@@ -818,6 +818,65 @@ body {
     }
 }
 
+.cold-start-banner {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0) + 0.5rem);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    max-width: calc(100% - 1rem);
+    padding: 0.625rem 0.875rem;
+    background: #fff8e1;
+    color: #6b4f00;
+    border: 1px solid #f0d77a;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    font-size: 0.875rem;
+    line-height: 1.3;
+    animation: coldStartFadeIn 0.25s ease;
+}
+
+.cold-start-banner[hidden] {
+    display: none !important;
+}
+
+.cold-start-banner i {
+    color: #b08300;
+    flex-shrink: 0;
+}
+
+.cold-start-dismiss {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+    cursor: pointer;
+    margin-left: 0.25rem;
+    opacity: 0.6;
+}
+
+.cold-start-dismiss:hover {
+    opacity: 1;
+}
+
+@keyframes coldStartFadeIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-0.5rem); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@media (max-width: 600px) {
+    .cold-start-banner {
+        top: calc(env(safe-area-inset-top, 0) + 4rem);
+        font-size: 0.8125rem;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
 @media (max-width: 480px) {
     .chat-container {
         height: 350px;
