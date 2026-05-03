@@ -5,6 +5,19 @@ services:
     plan: free
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start:prod
+    buildFilter:
+      paths:
+        - src/**
+        - package.json
+        - package-lock.json
+        - tsconfig*.json
+        - nest-cli.json
+        - Dockerfile
+        - render.yaml
+      ignoredPaths:
+        - frontend/**
+        - DEPLOYMENT.md
+        - README.md
     envVars:
       - key: NODE_ENV
         value: production
