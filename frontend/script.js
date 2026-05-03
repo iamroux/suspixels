@@ -1001,9 +1001,74 @@ class PixelCanvas {
     }
 
     drawGrid() {
-        // Plain white background
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        // --- Outside-canvas area: subtle checkerboard ---
+        const tileSize = 24;
+        for (let tx = 0; tx < Math.ceil(w / tileSize); tx++) {
+            for (let ty = 0; ty < Math.ceil(h / tileSize); ty++) {
+                this.ctx.fillStyle = (tx + ty) % 2 === 0 ? '#f0f0f0' : '#e4e4e4';
+                this.ctx.fillRect(tx * tileSize, ty * tileSize, tileSize, tileSize);
+            }
+        }
+
+        // --- Actual canvas area: white background ---
+        const canvasPixelW = this.gridSize * this.pixelSize * this.zoom;
+        const canvasPixelH = this.gridSize * this.pixelSize * this.zoom;
+        const originX = (w - canvasPixelW) / 2 + this.viewportX;
+        const originY = (h - canvasPixelH) / 2 + this.viewportY;
+
         this.ctx.fillStyle = '#FFFFFF';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillRect(originX, originY, canvasPixelW, canvasPixelH);
+
+        // --- Canvas boundary border ---
+        const borderWidth = Math.max(2, Math.min(6, this.zoom * 4));
+        this.ctx.strokeStyle = '#c0c0c0';
+        this.ctx.lineWidth = borderWidth;
+        this.ctx.strokeRect(
+            originX + borderWidth / 2,
+            originY + borderWidth / 2,
+            canvasPixelW - borderWidth,
+            canvasPixelH - borderWidth
+        );
+
+        // --- Corner accent markers for extra orientation cues ---
+        const markerLen = Math.max(12, Math.min(40, canvasPixelW * 0.015));
+        const markerW = borderWidth * 2;
+        this.ctx.strokeStyle = '#999999';
+        this.ctx.lineWidth = markerW;
+        this.ctx.lineCap = 'round';
+
+        // Top-left corner
+        this.ctx.beginPath();
+        this.ctx.moveTo(originX + markerLen, originY);
+        this.ctx.lineTo(originX, originY);
+        this.ctx.lineTo(originX, originY + markerLen);
+        this.ctx.stroke();
+
+        // Top-right corner
+        this.ctx.beginPath();
+        this.ctx.moveTo(originX + canvasPixelW - markerLen, originY);
+        this.ctx.lineTo(originX + canvasPixelW, originY);
+        this.ctx.lineTo(originX + canvasPixelW, originY + markerLen);
+        this.ctx.stroke();
+
+        // Bottom-left corner
+        this.ctx.beginPath();
+        this.ctx.moveTo(originX, originY + canvasPixelH - markerLen);
+        this.ctx.lineTo(originX, originY + canvasPixelH);
+        this.ctx.lineTo(originX + markerLen, originY + canvasPixelH);
+        this.ctx.stroke();
+
+        // Bottom-right corner
+        this.ctx.beginPath();
+        this.ctx.moveTo(originX + canvasPixelW - markerLen, originY + canvasPixelH);
+        this.ctx.lineTo(originX + canvasPixelW, originY + canvasPixelH);
+        this.ctx.lineTo(originX + canvasPixelW, originY + canvasPixelH - markerLen);
+        this.ctx.stroke();
+
+        this.ctx.lineCap = 'butt'; // reset
     }
 
     render() {
