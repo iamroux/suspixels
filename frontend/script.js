@@ -1205,22 +1205,56 @@ class PixelCanvas {
         const trigger = document.getElementById('users-count');
         const popover = document.getElementById('users-popover');
         if (!trigger || !popover) return;
+
+        if (popover.parentElement !== document.body) {
+            document.body.appendChild(popover);
+        }
+
+        const isMobile = () => window.matchMedia('(max-width: 600px)').matches;
+
+        const positionPopover = () => {
+            if (isMobile()) {
+                popover.style.top = '';
+                popover.style.left = '';
+                popover.style.right = '';
+                return;
+            }
+            const r = trigger.getBoundingClientRect();
+            popover.style.top = `${r.bottom + 8}px`;
+            popover.style.left = `${r.left}px`;
+            popover.style.right = 'auto';
+        };
+
         const close = () => {
             popover.classList.remove('open');
-            document.removeEventListener('click', onDocClick, true);
+            trigger.setAttribute('aria-expanded', 'false');
+            document.removeEventListener('pointerdown', onDocPointer, true);
+            document.removeEventListener('keydown', onKey, true);
+            window.removeEventListener('resize', positionPopover);
+            window.removeEventListener('scroll', positionPopover, true);
         };
-        const onDocClick = (e) => {
+        const onDocPointer = (e) => {
             if (popover.contains(e.target) || trigger.contains(e.target)) return;
             close();
         };
+        const onKey = (e) => { if (e.key === 'Escape') close(); };
+
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isOpen = popover.classList.toggle('open');
-            if (isOpen) {
+            const willOpen = !popover.classList.contains('open');
+            if (willOpen) {
                 this.renderUsersPopover();
-                setTimeout(() => document.addEventListener('click', onDocClick, true), 0);
+                positionPopover();
+                popover.classList.add('open');
+                trigger.setAttribute('aria-expanded', 'true');
+                setTimeout(() => {
+                    document.addEventListener('pointerdown', onDocPointer, true);
+                    document.addEventListener('keydown', onKey, true);
+                    window.addEventListener('resize', positionPopover);
+                    window.addEventListener('scroll', positionPopover, true);
+                }, 0);
             } else {
-                document.removeEventListener('click', onDocClick, true);
+                close();
             }
         });
     }
