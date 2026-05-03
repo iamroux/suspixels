@@ -1,5 +1,74 @@
 # Suspixels Deployment Guide
 
+---
+
+## 🟢 Current Production Status (as of May 2026)
+
+| Service | Platform | URL | Status |
+|---|---|---|---|
+| **Frontend** | Vercel | [frontend-swart-eight-bwf2ihn18r.vercel.app](https://frontend-swart-eight-bwf2ihn18r.vercel.app) | ✅ Live |
+| **Backend API** | Render | `https://suspixels-api.onrender.com` | ✅ Live |
+| **WebSocket** | Render | `wss://suspixels-api.onrender.com` | ✅ Live |
+| **Database** | Render (PostgreSQL) | Internal to Render | ✅ Live |
+| **Cache/PubSub** | Render (Redis) | Internal to Render | ✅ Live |
+
+> [!IMPORTANT]
+> The backend is on Render's **Free Tier**, which **spins down after 15 minutes of inactivity**.
+> The first visitor after a quiet period will experience a ~30–90 second cold start delay before the app connects.
+> To fix this permanently, upgrade to Render's Starter plan ($7/mo) or set up a free uptime pinger like [UptimeRobot](https://uptimerobot.com) to ping `https://suspixels-api.onrender.com/health` every 10 minutes.
+
+---
+
+## 🚀 How to Deploy Future Changes
+
+### Deploy Frontend Changes (HTML / CSS / JS)
+
+Whenever you edit anything in the `frontend/` folder:
+
+```bash
+# 1. Commit your work
+cd /Users/roux/Code/suspixels
+git add -A
+git commit -m "your message"
+git push
+
+# 2. Deploy to Vercel
+cd frontend
+vercel --prod --yes
+```
+
+That's it. Vercel will output the live URL when done.
+
+---
+
+### Deploy Backend Changes (NestJS / src/)
+
+Whenever you edit anything in `src/`, `package.json`, or any other server-side file:
+
+```bash
+# Just push to GitHub — Render auto-deploys from main branch
+git add -A
+git commit -m "your message"
+git push
+```
+
+Render will pick up the push, rebuild the NestJS app, and deploy automatically. Monitor at [dashboard.render.com](https://dashboard.render.com).
+
+---
+
+### Test Locally Before Deploying
+
+Frontend only (connects to live production backend):
+
+```bash
+# Kill any existing server on 5005, then start fresh
+lsof -ti :5005 | xargs kill -9 2>/dev/null; cd frontend && python3 -m http.server 5005 --bind 0.0.0.0
+```
+
+Open `http://localhost:5005` in your browser (or your local IP on your phone if on the same WiFi).
+
+---
+
 ## Overview
 This guide will help you deploy Suspixels in both local and production environments.
 
@@ -11,8 +80,10 @@ This guide will help you deploy Suspixels in both local and production environme
 - Docker compose with health checks
 - Production-ready environment configuration
 - Edit mode with explore/edit toggle
-- Pending changes with apply/discard functionality
+- Pending changes with apply/discard/undo functionality
 - Visual preview of pending changes (gold borders)
+- Mobile-first responsive UI (floating toolbar, compact header)
+- iOS Safari fixes for `backdrop-filter` and `position: fixed` elements
 
 ## Local Development Setup
 
