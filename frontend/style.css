@@ -187,10 +187,11 @@ body {
 
 /* Toolbar Styles */
 .toolbar {
-    position: absolute;
+    position: fixed;
     top: 70px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateZ(0);
+    -webkit-transform: translateX(-50%) translateZ(0);
     padding: 0.5rem 1rem;
     background-color: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(8px);
@@ -201,7 +202,7 @@ body {
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
-    z-index: 40;
+    z-index: 60;
     pointer-events: auto;
     width: max-content;
 }
@@ -606,11 +607,13 @@ body {
     }
 
     .toolbar {
+        position: fixed !important;
         padding: 0.5rem;
         top: auto !important;
-        bottom: 15px !important;
+        bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important;
         left: 50%;
-        transform: translateX(-50%);
+        transform: translateX(-50%) translateZ(0) !important;
+        -webkit-transform: translateX(-50%) translateZ(0) !important;
         width: max-content !important;
         max-width: 96vw;
         border-radius: 2rem;
