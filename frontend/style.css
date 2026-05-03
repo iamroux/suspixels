@@ -812,7 +812,7 @@ body {
     }
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
     .mobile-only-tool {
         display: none !important;
     }
