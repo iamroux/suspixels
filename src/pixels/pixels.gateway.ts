@@ -23,11 +23,20 @@ export class WebsocketGateway
   @WebSocketServer()
   server: Server;
 
-  private clients: Set<WebSocket> = new Set();
+  private clients: Map<WebSocket, string> = new Map();
 
   handleConnection(client: WebSocket) {
     this.logger.log('New client connected');
-    this.clients.add(client);
+    this.clients.set(client, '');
+    client.on('message', (raw: Buffer) => {
+      try {
+        const msg = JSON.parse(raw.toString());
+        if (msg?.type === 'identify' && typeof msg.name === 'string') {
+          this.clients.set(client, msg.name.trim().slice(0, 40));
+          this.broadcastUserCount();
+        }
+      } catch {}
+    });
     this.broadcastUserCount();
   }
 
@@ -38,13 +47,17 @@ export class WebsocketGateway
   }
 
   private broadcastUserCount() {
-    const userCount = this.clients.size;
+    const names = Array.from(new Set(
+      Array.from(this.clients.values()).filter((n) => n && n.length > 0)
+    )).sort((a, b) => a.localeCompare(b));
+    const userCount = names.length || this.clients.size;
     const message = JSON.stringify({
       type: 'user_count',
       count: userCount,
+      names,
     });
 
-    this.clients.forEach((client) => {
+    this.clients.forEach((_name, client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
       }
@@ -57,7 +70,7 @@ export class WebsocketGateway
       ...pixel,
     });
 
-    this.clients.forEach((client) => {
+    this.clients.forEach((_name, client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
       }
@@ -71,7 +84,7 @@ export class WebsocketGateway
       y,
     });
 
-    this.clients.forEach((client) => {
+    this.clients.forEach((_name, client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
       }

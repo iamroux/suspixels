@@ -143,6 +143,109 @@ body {
     gap: 0.5rem;
     font-size: 0.875rem;
     color: var(--text-secondary);
+    position: relative;
+}
+
+.users-count-btn {
+    background: none;
+    border: none;
+    padding: 0.125rem 0.375rem;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    border-radius: var(--radius-sm, 4px);
+    transition: background-color 0.15s ease;
+}
+
+.users-count-btn:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.users-popover {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    min-width: 180px;
+    max-width: 260px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: var(--bg-primary, #fff);
+    color: var(--text-primary, #111);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 0.5rem 0;
+    z-index: 1000;
+}
+
+.users-popover.open {
+    display: block;
+}
+
+.users-popover-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    padding: 0 0.75rem 0.375rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    margin-bottom: 0.25rem;
+}
+
+.users-popover-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.users-popover-item {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.users-popover-item.is-me {
+    font-weight: 600;
+}
+
+.me-tag {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-size: 0.75rem;
+}
+
+.users-popover-empty {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 600px) {
+    .users-popover {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-width: none;
+        max-height: 50vh;
+        border-radius: 12px 12px 0 0;
+        padding: 0.75rem 0;
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.16);
+    }
+    .users-popover-title {
+        padding: 0 1rem 0.5rem;
+        font-size: 0.8125rem;
+    }
+    .users-popover-item {
+        padding: 0.625rem 1rem;
+        font-size: 0.9375rem;
+    }
 }
 
 .status-indicator {

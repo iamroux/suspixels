@@ -36,6 +36,7 @@ class PixelCanvas {
         this.ws = null;
         this.connected = false;
         this.userCount = 0;
+        this.userNames = [];
 
         // Touch handling
         this.touches = [];
@@ -61,6 +62,7 @@ class PixelCanvas {
         this.setupCanvas();
         this.setupEventListeners();
         this.setupColorPicker();
+        this.initUsersPopover();
         this.connectWebSocket();
         this.loadPixels();
         this.centerCanvas();
@@ -116,6 +118,7 @@ class PixelCanvas {
                 modal.style.display = 'none';
                 submitBtn.removeEventListener('click', handleSubmit);
                 input.removeEventListener('keypress', handleKeyPress);
+                this.sendIdentify();
             } else {
                 alert('Please enter a valid name');
                 input.focus();
@@ -1112,6 +1115,7 @@ class PixelCanvas {
             console.log('WebSocket connected');
             this.connected = true;
             this.updateConnectionStatus();
+            this.sendIdentify();
         };
 
         this.ws.onclose = () => {
@@ -1147,7 +1151,9 @@ class PixelCanvas {
                 break;
             case 'user_count':
                 this.userCount = data.count;
+                this.userNames = Array.isArray(data.names) ? data.names : [];
                 document.getElementById('users-count').textContent = `${data.count} online`;
+                this.renderUsersPopover();
                 break;
         }
     }
@@ -1164,6 +1170,59 @@ class PixelCanvas {
             statusEl.className = 'status-indicator disconnected';
             connectionText.textContent = 'offline';
         }
+    }
+
+    sendIdentify() {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        if (!this.userName) return;
+        try {
+            this.ws.send(JSON.stringify({ type: 'identify', name: this.userName }));
+        } catch (e) {
+            console.warn('identify send failed', e);
+        }
+    }
+
+    renderUsersPopover() {
+        const popover = document.getElementById('users-popover');
+        if (!popover) return;
+        const names = this.userNames || [];
+        if (names.length === 0) {
+            popover.innerHTML = '<div class="users-popover-empty">No one identified yet</div>';
+            return;
+        }
+        const me = this.userName;
+        const items = names.map((n) => {
+            const isMe = n === me;
+            const safe = String(n).replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[c]);
+            return `<li class="users-popover-item${isMe ? ' is-me' : ''}">${safe}${isMe ? ' <span class="me-tag">(you)</span>' : ''}</li>`;
+        }).join('');
+        popover.innerHTML = `<div class="users-popover-title">Online (${names.length})</div><ul class="users-popover-list">${items}</ul>`;
+    }
+
+    initUsersPopover() {
+        const trigger = document.getElementById('users-count');
+        const popover = document.getElementById('users-popover');
+        if (!trigger || !popover) return;
+        const close = () => {
+            popover.classList.remove('open');
+            document.removeEventListener('click', onDocClick, true);
+        };
+        const onDocClick = (e) => {
+            if (popover.contains(e.target) || trigger.contains(e.target)) return;
+            close();
+        };
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = popover.classList.toggle('open');
+            if (isOpen) {
+                this.renderUsersPopover();
+                setTimeout(() => document.addEventListener('click', onDocClick, true), 0);
+            } else {
+                document.removeEventListener('click', onDocClick, true);
+            }
+        });
     }
 
     async loadPixels() {
