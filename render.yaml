@@ -26,7 +26,7 @@ services:
       - key: DATABASE_TYPE
         value: postgres
       - key: DATABASE_URL
-        value: postgresql://suspixels:Gtr7dtv6wfXfSGRaAW4TdFg1gxctxJ1z@dpg-d7r3u7km0tmc73837dm0-a.singapore-postgres.render.com/suspixels
+        sync: false
       - key: DATABASE_SSL_ENABLED
         value: 'true'
       - key: DATABASE_REJECT_UNAUTHORIZED
@@ -34,6 +34,6 @@ services:
       - key: DATABASE_SYNCHRONIZE
         value: 'true'
       - key: REDIS_URL
-        value: redis://default:W4MiZkoR9Cj86lhc9qYIHdEbW7u2ei2D@redis-15545.crce280.asia-south1-1.gcp.cloud.redislabs.com:15545
+        sync: false
       - key: APP_CORS_ORIGINS
         sync: false

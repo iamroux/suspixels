@@ -9,13 +9,15 @@
 | **Frontend** | Vercel | [frontend-swart-eight-bwf2ihn18r.vercel.app](https://frontend-swart-eight-bwf2ihn18r.vercel.app) | ✅ Live |
 | **Backend API** | Render | `https://suspixels-api.onrender.com` | ✅ Live |
 | **WebSocket** | Render | `wss://suspixels-api.onrender.com` | ✅ Live |
-| **Database** | Render (PostgreSQL) | Internal to Render | ✅ Live |
-| **Cache/PubSub** | Render (Redis) | Internal to Render | ✅ Live |
+| **Database** | Neon.tech | External (Cloud) | ✅ Live |
+| **Cache/PubSub** | Redis Cloud | External (Cloud) | ✅ Live |
 
 > [!IMPORTANT]
-> The backend is on Render's **Free Tier**, which **spins down after 15 minutes of inactivity**.
-> The first visitor after a quiet period will experience a ~30–90 second cold start delay before the app connects.
-> To fix this permanently, upgrade to Render's Starter plan ($7/mo) or set up a free uptime pinger like [UptimeRobot](https://uptimerobot.com) to ping `https://suspixels-api.onrender.com/health` every 10 minutes.
+> The app is configured for a **"Lifetime Free"** stack. 
+> - **Backend:** Hosted on Render's Free Tier. It normally spins down after 15 mins, but is kept awake by **UptimeRobot**.
+> - **Database:** Hosted on **Neon.tech**, which has **no 90-day expiry** (unlike Render's native DB).
+> - **Cache:** Hosted on **Redis Cloud**, providing a permanent 30MB instance.
+
 
 ---
 
@@ -127,27 +129,23 @@ This guide will help you deploy Suspixels in both local and production environme
 
 ### Environment Setup
 
-1. **Create/update `.env` file for production:**
+1. **Create/update environment variables in Render/Vercel dashboards:**
    ```env
-   APP_PORT=3002
-   # Leave empty to allow all origins, or specify your domain
-   APP_CORS_ORIGINS=https://yourdomain.com
-   DATABASE_HOST=postgres
-   DATABASE_PORT=5432
-   DATABASE_USERNAME=postgres
-   DATABASE_PASSWORD=<strong_password_here>
-   DATABASE_NAME=pixel_canvas
-   # Important: Set to false in production!
+   # Backend (Render)
+   NODE_ENV=production
+   APP_PORT=10000
+   DATABASE_URL=postgresql://neondb_owner:...@ep-...-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+   DATABASE_SSL_ENABLED=true
+   DATABASE_REJECT_UNAUTHORIZED=false
    DATABASE_SYNCHRONIZE=true
-   REDIS_HOST=redis
-   REDIS_PORT=6379
+   REDIS_URL=redis://default:...@redis-....cloud.redislabs.com:15545
+   APP_CORS_ORIGINS=https://your-vercel-domain.com
    ```
 
 2. **Important Production Settings:**
-   - Set `DATABASE_SYNCHRONIZE=true` (tables created automatically)
-   - Use strong passwords
-   - Configure proper CORS origins
-   - Use HTTPS/WSS in production
+   - **Neon DB:** Ensure `sslmode=require` is in the URL.
+   - **Redis Cloud:** Use the full connection string from the dashboard.
+   - **CORS:** Explicitly set your Vercel URL in `APP_CORS_ORIGINS`.
 
 ### Docker Compose Deployment
 
@@ -278,6 +276,12 @@ The app now has two modes:
 
 ## Monitoring
 
+### Uptime Monitoring (UptimeRobot)
+To prevent Render's free tier from sleeping, a monitor is set up on **UptimeRobot**:
+- **Target:** `https://suspixels-api.onrender.com/health`
+- **Interval:** Every 5 minutes
+- **Purpose:** Keeps the API "warm" so users never experience a cold start.
+
 ### Health Checks
 - Endpoint: `GET /health`
 - Returns: `{ status: 'ok', timestamp: ISO8601, uptime: seconds }`
@@ -359,12 +363,22 @@ docker compose logs -f redis
 
 ## Backup and Restore
 
-### Backup Database
+### Backup (Neon/Cloud)
+```bash
+pg_dump "YOUR_DATABASE_URL" --no-owner --no-acl -f backup.sql
+```
+
+### Restore (Neon/Cloud)
+```bash
+psql "YOUR_DATABASE_URL" -f backup.sql
+```
+
+### Local (Docker)
 ```bash
 docker compose exec postgres pg_dump -U postgres pixel_canvas > backup.sql
 ```
 
-### Restore Database
+### Local Restore
 ```bash
 cat backup.sql | docker compose exec -T postgres psql -U postgres pixel_canvas
 ```
