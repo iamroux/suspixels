@@ -376,8 +376,12 @@ class PixelCanvas {
                     this.placePixel(gridPos.x, gridPos.y);
                 } else {
                     // Explore mode: Show info on click
-                    this.updatePixelInfoPosition(e.clientX, e.clientY);
-                    this.showPixelInfo(gridPos.x, gridPos.y);
+                    if (this.pixels.has(`${gridPos.x},${gridPos.y}`)) {
+                        this.updatePixelInfoPosition(e.clientX, e.clientY);
+                        this.showPixelInfo(gridPos.x, gridPos.y);
+                    } else {
+                        this.hidePixelInfo();
+                    }
                 }
             }
         } else if (e.button === 2) {
@@ -528,9 +532,13 @@ class PixelCanvas {
                             this.placePixel(gridPos.x, gridPos.y);
                         } else {
                             // Explore mode: Show info on touch
-                            const touch = e.changedTouches[0];
-                            this.updatePixelInfoPosition(touch.clientX, touch.clientY);
-                            this.showPixelInfo(gridPos.x, gridPos.y);
+                            if (this.pixels.has(`${gridPos.x},${gridPos.y}`)) {
+                                const touch = e.changedTouches[0];
+                                this.updatePixelInfoPosition(touch.clientX, touch.clientY);
+                                this.showPixelInfo(gridPos.x, gridPos.y);
+                            } else {
+                                this.hidePixelInfo();
+                            }
                         }
                     }
                 }
@@ -978,6 +986,14 @@ class PixelCanvas {
         }
 
         const pixelKey = `${x},${y}`;
+        const pixelInfo = document.getElementById('pixel-info');
+
+        // Stop clicks inside the info box from affecting the canvas
+        if (!pixelInfo.onclick) {
+            pixelInfo.onclick = (e) => e.stopPropagation();
+            pixelInfo.onmousedown = (e) => e.stopPropagation();
+        }
+
         if (this.pixels.has(pixelKey)) {
             let data;
             if (this.pixelMetadata.has(pixelKey)) {
@@ -997,12 +1013,13 @@ class PixelCanvas {
             }
 
             if (data) {
-                const pixelInfo = document.getElementById('pixel-info');
                 pixelInfo.innerHTML = `
                     <div class="pixel-info-header">
                         <div class="pixel-color" style="background-color: ${data.color};"></div>
                         <span class="pixel-coords">${x}, ${y}</span>
-                        <button class="pixel-info-close" onclick="window.pixelCanvas.hidePixelInfo()"><i class="fas fa-times"></i></button>
+                        <button class="pixel-info-close" onclick="event.stopPropagation(); window.pixelCanvas.hidePixelInfo()">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     <div class="pixel-details">
                         <div class="pixel-author"><strong>By:</strong> ${data.insertedBy || 'Anonymous'}</div>
@@ -1011,6 +1028,8 @@ class PixelCanvas {
                 `;
                 pixelInfo.style.display = 'block';
             }
+        } else {
+            this.hidePixelInfo();
         }
     }
 
