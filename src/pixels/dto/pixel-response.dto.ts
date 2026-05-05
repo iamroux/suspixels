@@ -10,9 +10,9 @@ export class PixelResponseDto {
   @ApiProperty()
   color: string;
 
-  @ApiProperty()
-  insertedBy: string;
+  @ApiProperty({ required: false })
+  insertedBy?: string;
 
-  @ApiProperty()
-  updatedAt: Date;
+  @ApiProperty({ required: false })
+  updatedAt?: Date;
 }

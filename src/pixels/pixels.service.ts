@@ -118,14 +118,6 @@ export class PixelsService {
     );
 
     const pixelKey = `${x},${y}`;
-    const responseDto: PixelResponseDto = {
-      x,
-      y,
-      color,
-      insertedBy,
-      updatedAt: new Date(),
-    };
-
     await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelKey, color);
 
     const responseDto: PixelResponseDto = {
