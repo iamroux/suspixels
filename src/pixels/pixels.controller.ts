@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Logger, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PixelsService } from './pixels.service';
 import { CreatePixelDto } from './dto/create-pixel.dto';
@@ -137,5 +137,15 @@ export class PixelsController {
   @ApiResponse({ status: 200, description: 'Leaderboard data' })
   async getLeaderboard() {
     return this.pixelsService.getLeaderboard();
+  }
+
+  @Get('info/:x/:y')
+  @ApiOperation({ summary: 'Get metadata for a specific pixel' })
+  @ApiResponse({ status: 200, description: 'Pixel metadata', type: PixelResponseDto })
+  async getPixelMetadata(
+    @Param('x') x: number,
+    @Param('y') y: number,
+  ): Promise<PixelResponseDto | null> {
+    return this.pixelsService.getPixelMetadata(Number(x), Number(y));
   }
 }

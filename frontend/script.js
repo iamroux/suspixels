@@ -968,28 +968,45 @@ class PixelCanvas {
         this.clearPixel(x, y);
     }
 
-    showPixelInfo(x, y) {
+    async showPixelInfo(x, y) {
         if (this.pixelInfoTimeout) {
             clearTimeout(this.pixelInfoTimeout);
             this.pixelInfoTimeout = null;
         }
 
         const pixelKey = `${x},${y}`;
-        if (this.pixelMetadata.has(pixelKey)) {
-            this.pixelInfoTimeout = setTimeout(() => {
-                const data = this.pixelMetadata.get(pixelKey);
-                const pixelInfo = document.getElementById('pixel-info');
+        if (this.pixels.has(pixelKey)) {
+            this.pixelInfoTimeout = setTimeout(async () => {
+                let data;
+                if (this.pixelMetadata.has(pixelKey)) {
+                    data = this.pixelMetadata.get(pixelKey);
+                } else {
+                    try {
+                        const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/info/${x}/${y}`);
+                        if (response.ok) {
+                            data = await response.json();
+                            if (data) {
+                                this.pixelMetadata.set(pixelKey, data);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch pixel info:', error);
+                    }
+                }
 
-                pixelInfo.innerHTML = `
-                    <div class="pixel-color" style="background-color: ${data.color};"></div>
-                    <div class="pixel-details">
-                        <div class="pixel-coords"><strong>Position:</strong> ${x}, ${y}</div>
-                        <div class="pixel-author"><strong>Placed by:</strong> ${data.insertedBy || 'Anonymous'}</div>
-                        <div class="pixel-time"><strong>Last updated:</strong> ${new Date(data.updatedAt).toLocaleString()}</div>
-                    </div>
-                `;
-                pixelInfo.style.display = 'block';
-            }, 1000);
+                if (data) {
+                    const pixelInfo = document.getElementById('pixel-info');
+                    pixelInfo.innerHTML = `
+                        <div class="pixel-color" style="background-color: ${data.color};"></div>
+                        <div class="pixel-details">
+                            <div class="pixel-coords"><strong>Position:</strong> ${x}, ${y}</div>
+                            <div class="pixel-author"><strong>Placed by:</strong> ${data.insertedBy || 'Anonymous'}</div>
+                            <div class="pixel-time"><strong>Last updated:</strong> ${new Date(data.updatedAt).toLocaleString()}</div>
+                        </div>
+                    `;
+                    pixelInfo.style.display = 'block';
+                }
+            }, 400); // 400ms delay for smoother hover feel
         }
     }
 
@@ -1289,11 +1306,6 @@ class PixelCanvas {
 
             pixels.forEach(pixel => {
                 this.pixels.set(`${pixel.x},${pixel.y}`, pixel.color);
-                this.pixelMetadata.set(`${pixel.x},${pixel.y}`, {
-                    color: pixel.color,
-                    insertedBy: pixel.insertedBy,
-                    updatedAt: pixel.updatedAt
-                });
             });
 
             this.render();

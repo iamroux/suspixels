@@ -64,13 +64,7 @@ export class PixelsService {
       const pixelMap = {};
 
       pixels.forEach((pixel) => {
-        pixelMap[`${pixel.x},${pixel.y}`] = JSON.stringify({
-          x: pixel.x,
-          y: pixel.y,
-          color: pixel.color,
-          insertedBy: pixel.insertedBy,
-          updatedAt: pixel.updatedAt,
-        });
+        pixelMap[`${pixel.x},${pixel.y}`] = pixel.color;
       });
 
       if (Object.keys(pixelMap).length > 0) {
@@ -84,7 +78,10 @@ export class PixelsService {
     try {
       const cachedPixels = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
       if (Object.keys(cachedPixels).length > 0) {
-        return Object.values(cachedPixels).map((pixel) => JSON.parse(pixel));
+        return Object.entries(cachedPixels).map(([key, color]) => {
+          const [x, y] = key.split(',').map(Number);
+          return { x, y, color };
+        });
       }
     } catch (error) {
       this.logger.warn('Cache miss, falling back to database', error);
@@ -129,15 +126,24 @@ export class PixelsService {
       updatedAt: new Date(),
     };
 
-    await this.redisClient.hset(
-      this.PIXEL_GRID_KEY,
-      pixelKey,
-      JSON.stringify(responseDto),
-    );
+    await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelKey, color);
+
+    const responseDto: PixelResponseDto = {
+      x,
+      y,
+      color,
+      insertedBy,
+      updatedAt: new Date(),
+    };
 
     this.websocketGateway.broadcastPixelUpdate(responseDto);
 
     return responseDto;
+  }
+
+  async getPixelMetadata(x: number, y: number): Promise<PixelResponseDto | null> {
+    const pixel = await this.pixelRepository.findOne({ where: { x, y } });
+    return pixel ? this.toResponseDto(pixel) : null;
   }
 
   async deletePixel(
@@ -227,9 +233,7 @@ export class PixelsService {
     const pixelMap = {};
 
     pixels.forEach((pixel) => {
-      pixelMap[`${pixel.x},${pixel.y}`] = JSON.stringify(
-        this.toResponseDto(pixel),
-      );
+      pixelMap[`${pixel.x},${pixel.y}`] = pixel.color;
     });
 
     if (Object.keys(pixelMap).length > 0) {
