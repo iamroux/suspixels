@@ -372,8 +372,12 @@ class PixelCanvas {
                 if (this.isColorPickerMode) {
                     this.handlePixelColorPick(gridPos.x, gridPos.y);
                     this.toggleColorPickerMode();
-                } else {
+                } else if (this.isEditMode) {
                     this.placePixel(gridPos.x, gridPos.y);
+                } else {
+                    // Explore mode: Show info on click
+                    this.updatePixelInfoPosition(e.clientX, e.clientY);
+                    this.showPixelInfo(gridPos.x, gridPos.y);
                 }
             }
         } else if (e.button === 2) {
@@ -388,14 +392,6 @@ class PixelCanvas {
 
         const gridPos = this.screenToGrid(x, y);
         document.getElementById('coordinates').textContent = `${gridPos.x}, ${gridPos.y}`;
-
-        this.updatePixelInfoPosition(e.clientX, e.clientY);
-
-        if (this.pixelMetadata.has(`${gridPos.x},${gridPos.y}`)) {
-            this.showPixelInfo(gridPos.x, gridPos.y);
-        } else {
-            this.hidePixelInfo();
-        }
 
         if (this.isPanning) {
             this.updatePan(x, y);
@@ -528,7 +524,14 @@ class PixelCanvas {
                 if (timeDiff < 500) { // Increased tap tolerance for mobile
                     const gridPos = this.screenToGrid(this.touchStartX, this.touchStartY);
                     if (this.isValidGridPosition(gridPos.x, gridPos.y)) {
-                        this.placePixel(gridPos.x, gridPos.y);
+                        if (this.isEditMode) {
+                            this.placePixel(gridPos.x, gridPos.y);
+                        } else {
+                            // Explore mode: Show info on touch
+                            const touch = e.changedTouches[0];
+                            this.updatePixelInfoPosition(touch.clientX, touch.clientY);
+                            this.showPixelInfo(gridPos.x, gridPos.y);
+                        }
                     }
                 }
             }
@@ -976,37 +979,38 @@ class PixelCanvas {
 
         const pixelKey = `${x},${y}`;
         if (this.pixels.has(pixelKey)) {
-            this.pixelInfoTimeout = setTimeout(async () => {
-                let data;
-                if (this.pixelMetadata.has(pixelKey)) {
-                    data = this.pixelMetadata.get(pixelKey);
-                } else {
-                    try {
-                        const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/info/${x}/${y}`);
-                        if (response.ok) {
-                            data = await response.json();
-                            if (data) {
-                                this.pixelMetadata.set(pixelKey, data);
-                            }
+            let data;
+            if (this.pixelMetadata.has(pixelKey)) {
+                data = this.pixelMetadata.get(pixelKey);
+            } else {
+                try {
+                    const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/info/${x}/${y}`);
+                    if (response.ok) {
+                        data = await response.json();
+                        if (data) {
+                            this.pixelMetadata.set(pixelKey, data);
                         }
-                    } catch (error) {
-                        console.error('Failed to fetch pixel info:', error);
                     }
+                } catch (error) {
+                    console.error('Failed to fetch pixel info:', error);
                 }
+            }
 
-                if (data) {
-                    const pixelInfo = document.getElementById('pixel-info');
-                    pixelInfo.innerHTML = `
+            if (data) {
+                const pixelInfo = document.getElementById('pixel-info');
+                pixelInfo.innerHTML = `
+                    <div class="pixel-info-header">
                         <div class="pixel-color" style="background-color: ${data.color};"></div>
-                        <div class="pixel-details">
-                            <div class="pixel-coords"><strong>Position:</strong> ${x}, ${y}</div>
-                            <div class="pixel-author"><strong>Placed by:</strong> ${data.insertedBy || 'Anonymous'}</div>
-                            <div class="pixel-time"><strong>Last updated:</strong> ${new Date(data.updatedAt).toLocaleString()}</div>
-                        </div>
-                    `;
-                    pixelInfo.style.display = 'block';
-                }
-            }, 400); // 400ms delay for smoother hover feel
+                        <span class="pixel-coords">${x}, ${y}</span>
+                        <button class="pixel-info-close" onclick="window.pixelCanvas.hidePixelInfo()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="pixel-details">
+                        <div class="pixel-author"><strong>By:</strong> ${data.insertedBy || 'Anonymous'}</div>
+                        <div class="pixel-time"><strong>At:</strong> ${new Date(data.updatedAt).toLocaleString()}</div>
+                    </div>
+                `;
+                pixelInfo.style.display = 'block';
+            }
         }
     }
 
@@ -1347,7 +1351,7 @@ class ChatWidget {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new PixelCanvas();
+    window.pixelCanvas = new PixelCanvas();
     new ChatWidget();
 
     // Ensure leaderboard modal is hidden on page load
