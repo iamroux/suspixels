@@ -22,10 +22,10 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new WsAdapter(app));
 
-  app.useGlobalPipes(new ValidationPipe());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
+      whitelist: true,
       transformOptions: { enableImplicitConversion: true },
     }),
   );

@@ -49,10 +49,13 @@ class PixelCanvas {
         // Pixel info hover
         this.pixelInfoTimeout = null;
 
-        // User name
-        this.userName = localStorage.getItem('pixelUserName') || '';
-        if (!this.userName) {
-            this.initNameModal();
+        // Auth state
+        this.authToken = localStorage.getItem('pixelAuthToken') || '';
+        this.user = JSON.parse(localStorage.getItem('pixelUser') || 'null');
+        this.userName = this.user ? this.user.name : (localStorage.getItem('pixelUserName') || '');
+        
+        if (!this.authToken && !this.userName) {
+            this.initAuthModal();
         }
 
         this.init();
@@ -64,6 +67,7 @@ class PixelCanvas {
         this.setupColorPicker();
         this.initUsersPopover();
         this.initColdStartBanner();
+        this.updateAuthUI();
         this.connectWebSocket();
         this.loadPixels();
         this.centerCanvas();
@@ -121,37 +125,194 @@ class PixelCanvas {
         return `${wsProtocol}//${backendHost}`;
     }
 
-    initNameModal() {
-        const modal = document.getElementById('name-modal');
-        const input = document.getElementById('username-input');
-        const submitBtn = document.getElementById('submit-name');
+    initAuthModal() {
+        const modal = document.getElementById('auth-modal');
+        const tabs = document.querySelectorAll('.auth-tab');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const guestBtn = document.getElementById('guest-btn');
+        const switchLink = document.getElementById('auth-switch-link');
+        const switchText = document.getElementById('auth-switch-text');
+        const title = document.getElementById('auth-title');
 
         modal.style.display = 'block';
-        input.focus();
 
-        const handleSubmit = () => {
-            const name = input.value.trim();
-            if (name) {
-                this.userName = name;
-                localStorage.setItem('pixelUserName', name);
-                modal.style.display = 'none';
-                submitBtn.removeEventListener('click', handleSubmit);
-                input.removeEventListener('keypress', handleKeyPress);
-                this.sendIdentify();
+        const switchTab = (tab) => {
+            tabs.forEach(t => t.classList.remove('active'));
+            const activeTab = typeof tab === 'string' ? document.querySelector(`[data-tab="${tab}"]`) : tab;
+            activeTab.classList.add('active');
+            
+            if (activeTab.dataset.tab === 'login') {
+                loginForm.style.display = 'flex';
+                registerForm.style.display = 'none';
+                title.textContent = 'Welcome Back';
+                switchText.innerHTML = `Don't have an account? <a href="#" id="auth-switch-link">Register</a>`;
             } else {
-                alert('Please enter a valid name');
-                input.focus();
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'flex';
+                title.textContent = 'Create Account';
+                switchText.innerHTML = `Already have an account? <a href="#" id="auth-switch-link">Login</a>`;
             }
+            
+            // Re-bind switch link
+            document.getElementById('auth-switch-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                switchTab(activeTab.dataset.tab === 'login' ? 'register' : 'login');
+            });
         };
 
-        const handleKeyPress = (e) => {
-            if (e.key === 'Enter') {
-                handleSubmit();
-            }
-        };
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab));
+        });
 
-        submitBtn.addEventListener('click', handleSubmit);
-        input.addEventListener('keypress', handleKeyPress);
+        switchLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchTab('register');
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            await this.login(email, password);
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            await this.register(name, email, password);
+        });
+
+        guestBtn.addEventListener('click', () => {
+            this.userName = 'Guest_' + Math.random().toString(36).substring(7);
+            localStorage.setItem('pixelUserName', this.userName);
+            modal.style.display = 'none';
+            this.updateAuthUI();
+            this.sendIdentify();
+        });
+    }
+
+    async login(email, password) {
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Login failed');
+            }
+
+            const data = await response.json();
+            this.handleAuthSuccess(data);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async register(name, email, password) {
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Registration failed');
+            }
+
+            const data = await response.json();
+            this.handleAuthSuccess(data);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    handleAuthSuccess(data) {
+        this.authToken = data.access_token;
+        this.user = data.user;
+        this.userName = data.user.name;
+
+        localStorage.setItem('pixelAuthToken', this.authToken);
+        localStorage.setItem('pixelUser', JSON.stringify(this.user));
+        localStorage.removeItem('pixelUserName'); // Use auth name instead
+
+        document.getElementById('auth-modal').style.display = 'none';
+        this.updateAuthUI();
+        
+        // Reconnect WebSocket with new token
+        if (this.ws) this.ws.close();
+        this.connectWebSocket();
+        this.sendIdentify();
+    }
+
+    logout() {
+        this.authToken = '';
+        this.user = null;
+        this.userName = '';
+        localStorage.removeItem('pixelAuthToken');
+        localStorage.removeItem('pixelUser');
+        localStorage.removeItem('pixelUserName');
+        
+        this.updateAuthUI();
+        if (this.ws) this.ws.close();
+        this.connectWebSocket();
+        this.initAuthModal();
+    }
+
+    updateAuthUI() {
+        const profileContainer = document.getElementById('user-profile');
+        if (this.user) {
+            const initial = this.user.name.charAt(0).toUpperCase();
+            profileContainer.innerHTML = `
+                <div class="profile-info">
+                    <div class="user-avatar">${initial}</div>
+                    <span class="user-name-label">${this.user.name}</span>
+                    <button class="logout-btn" title="Logout" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            `;
+            document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+            
+            // Hide "Login to Edit" messages
+            const lockedMsg = document.querySelector('.edit-locked-message');
+            if (lockedMsg) lockedMsg.classList.remove('visible');
+        } else {
+            profileContainer.innerHTML = `
+                <button id="login-trigger-btn" class="header-icon-btn profile-btn">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Login</span>
+                </button>
+            `;
+            document.getElementById('login-trigger-btn').addEventListener('click', () => this.initAuthModal());
+            
+            // Show "Login to Edit" message if in guest mode
+            this.updateEditLockedMessage();
+        }
+    }
+
+    updateEditLockedMessage() {
+        const container = document.querySelector('.mode-toggle-container');
+        let msg = container.querySelector('.edit-locked-message');
+        if (!msg) {
+            msg = document.createElement('div');
+            msg.className = 'edit-locked-message';
+            msg.textContent = 'Login to enable editing';
+            container.appendChild(msg);
+        }
+        
+        if (!this.user) {
+            msg.classList.add('visible');
+        } else {
+            msg.classList.remove('visible');
+        }
     }
 
     setupCanvas() {
@@ -686,6 +847,10 @@ class PixelCanvas {
     }
 
     toggleEditMode() {
+        if (!this.user) {
+            this.initAuthModal();
+            return;
+        }
         this.isEditMode = !this.isEditMode;
         const modeBtn = document.getElementById('mode-toggle-btn');
         const editActions = document.getElementById('edit-mode-actions');
@@ -859,6 +1024,7 @@ class PixelCanvas {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
                 },
                 body: JSON.stringify({ operations })
             });
@@ -1248,7 +1414,11 @@ class PixelCanvas {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
         if (!this.userName) return;
         try {
-            this.ws.send(JSON.stringify({ type: 'identify', name: this.userName }));
+            this.ws.send(JSON.stringify({ 
+                type: 'identify', 
+                name: this.userName,
+                token: this.authToken 
+            }));
         } catch (e) {
             console.warn('identify send failed', e);
         }

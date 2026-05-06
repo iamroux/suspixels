@@ -43,6 +43,13 @@
                     <i class="fas fa-trophy"></i>
                     <span>Leaderboard</span>
                 </button>
+                <div class="user-profile" id="user-profile">
+                    <!-- Dynamic content will be injected here by script.js -->
+                    <button id="login-trigger-btn" class="header-icon-btn profile-btn">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Login</span>
+                    </button>
+                </div>
                 <div class="mode-toggle-container">
                     <button id="mode-toggle-btn" class="mode-toggle-btn explore-mode">
                         <i class="fas fa-eye"></i>
@@ -103,25 +110,68 @@
 
     </div>
 
-    <!-- Name Modal -->
-    <div id="name-modal" class="modal">
-        <div class="modal-content">
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content auth-modal-content">
             <div class="modal-header">
-                <h2>Welcome to Pixel Canvas!</h2>
-                <p>Collaborate with others in real-time to create pixel art</p>
+                <h2 id="auth-title">Welcome to Sus Pixels</h2>
+                <p id="auth-subtitle">Collaborate with others in real-time</p>
             </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Login</button>
+                <button class="auth-tab" data-tab="register">Register</button>
+            </div>
+
             <div class="modal-body">
-                <div class="input-group">
-                    <label for="username-input">Choose your name:</label>
-                    <input type="text" id="username-input" placeholder="Artist name" maxlength="20">
-                    <div class="input-hint">Max 20 characters</div>
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form">
+                    <div class="input-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" placeholder="email@example.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="primary-btn full-width">
+                        <span>Login</span>
+                        <i class="fas fa-sign-in-alt"></i>
+                    </button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="register-form" class="auth-form" style="display: none;">
+                    <div class="input-group">
+                        <label for="reg-name">Name</label>
+                        <input type="text" id="reg-name" placeholder="Artist name" maxlength="20" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="reg-email">Email</label>
+                        <input type="email" id="reg-email" placeholder="email@example.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="reg-password">Password</label>
+                        <input type="password" id="reg-password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="primary-btn full-width">
+                        <span>Create Account</span>
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>OR</span>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button id="submit-name" class="primary-btn">
-                    <span>Start Creating</span>
-                    <i class="fas fa-arrow-right"></i>
+
+                <button id="guest-btn" class="secondary-btn full-width">
+                    <span>View as Guest</span>
+                    <i class="fas fa-eye"></i>
                 </button>
+            </div>
+            
+            <div class="modal-footer auth-footer">
+                <p id="auth-switch-text">Don't have an account? <a href="#" id="auth-switch-link">Register</a></p>
             </div>
         </div>
     </div>

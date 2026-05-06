@@ -14,7 +14,8 @@ interface PendingPixel {
   x: number;
   y: number;
   color: string;
-  insertedBy: string;
+  insertedBy?: string;
+  userId?: string;
   timestamp: number;
 }
 
@@ -99,14 +100,15 @@ export class PixelsService {
     return pixels.map(this.toResponseDto);
   }
 
-  async setPixel(createPixelDto: CreatePixelDto): Promise<PixelResponseDto> {
-    const { x, y, color, insertedBy } = createPixelDto;
+  async setPixel(createPixelDto: CreatePixelDto & { userId?: string }): Promise<PixelResponseDto> {
+    const { x, y, color, insertedBy, userId } = createPixelDto;
 
     const pendingPixel: PendingPixel = {
       x,
       y,
       color,
       insertedBy,
+      userId,
       timestamp: Date.now(),
     };
 
@@ -125,6 +127,7 @@ export class PixelsService {
       y,
       color,
       insertedBy,
+      userId,
       updatedAt: new Date(),
     };
 
@@ -204,6 +207,7 @@ export class PixelsService {
       y: pixel.y,
       color: pixel.color,
       insertedBy: pixel.insertedBy,
+      userId: pixel.userId,
     }));
 
     try {
@@ -212,7 +216,7 @@ export class PixelsService {
         .insert()
         .into(Pixel)
         .values(values)
-        .orUpdate(['color', 'inserted_by', 'updated_at'], ['x', 'y'])
+        .orUpdate(['color', 'inserted_by', 'user_id', 'updated_at'], ['x', 'y'])
         .execute();
 
       await this.redisClient.del(keys);
@@ -237,9 +241,10 @@ export class PixelsService {
   async getLeaderboard(): Promise<{ name: string; pixelCount: number }[]> {
     return this.pixelRepository
       .createQueryBuilder('pixel')
-      .select('pixel.inserted_by', 'name')
+      .select('pixel.insertedBy', 'name')
       .addSelect('COUNT(*)', 'pixelCount')
-      .groupBy('pixel.inserted_by')
+      .groupBy('pixel.insertedBy')
+      .addGroupBy('pixel.userId')
       .orderBy('COUNT(*)', 'DESC')
       .limit(100)
       .getRawMany();
@@ -251,6 +256,7 @@ export class PixelsService {
       y: pixel.y,
       color: pixel.color,
       insertedBy: pixel.insertedBy,
+      userId: pixel.userId,
       updatedAt: pixel.updatedAt,
     };
   }

@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Delete, Body, Logger, Param } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Logger, Param, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PixelsService } from './pixels.service';
 import { CreatePixelDto } from './dto/create-pixel.dto';
 import { PixelResponseDto } from './dto/pixel-response.dto';
 import { DeletePixelDto } from './dto/delete-pixel.dto';
 import { ConfigService } from '@nestjs/config';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('pixels')
 @Controller('api/pixels')
@@ -38,6 +39,7 @@ export class PixelsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Place or update a pixel' })
   @ApiResponse({
     status: 201,
@@ -46,13 +48,19 @@ export class PixelsController {
   })
   async setPixel(
     @Body() createPixelDto: CreatePixelDto,
+    @Req() req: any,
   ): Promise<PixelResponseDto> {
+    const user = req.user;
     if (this.isDevelopment) {
       this.logger.debug(
-        `POST /api/pixels - Setting pixel at (${createPixelDto.x}, ${createPixelDto.y}) color: ${createPixelDto.color} by: ${createPixelDto.insertedBy}`,
+        `POST /api/pixels - Setting pixel at (${createPixelDto.x}, ${createPixelDto.y}) color: ${createPixelDto.color} by: ${user.name} (${user.userId})`,
       );
     }
-    const result = await this.pixelsService.setPixel(createPixelDto);
+    const result = await this.pixelsService.setPixel({
+      ...createPixelDto,
+      insertedBy: user.name,
+      userId: user.userId,
+    });
     if (this.isDevelopment) {
       this.logger.debug(
         `POST /api/pixels - Pixel set successfully at (${result.x}, ${result.y})`,
@@ -62,6 +70,7 @@ export class PixelsController {
   }
 
   @Delete()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Delete a pixel' })
   @ApiResponse({ status: 200, description: 'Pixel deleted successfully' })
   async deletePixel(
@@ -82,6 +91,7 @@ export class PixelsController {
   }
 
   @Post('batch')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Batch create/update/delete pixels' })
   @ApiResponse({
     status: 201,
@@ -89,10 +99,12 @@ export class PixelsController {
   })
   async batchPixels(
     @Body() batchData: { operations: Array<{ action: 'set' | 'delete'; data: any }> },
+    @Req() req: any,
   ): Promise<{ success: number; failed: number }> {
+    const user = req.user;
     if (this.isDevelopment) {
       this.logger.debug(
-        `POST /api/pixels/batch - Processing ${batchData.operations.length} operations`,
+        `POST /api/pixels/batch - Processing ${batchData.operations.length} operations for ${user.name}`,
       );
     }
 
@@ -102,7 +114,11 @@ export class PixelsController {
     const results = await Promise.allSettled(
       batchData.operations.map(async (op) => {
         if (op.action === 'set') {
-          return await this.pixelsService.setPixel(op.data);
+          return await this.pixelsService.setPixel({
+            ...op.data,
+            insertedBy: user.name,
+            userId: user.userId,
+          });
         } else if (op.action === 'delete') {
           return await this.pixelsService.deletePixel(op.data);
         }
