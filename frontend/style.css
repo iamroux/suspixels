@@ -1210,6 +1210,11 @@ body {
     border-bottom: 1px solid var(--border-light);
 }
 
+#leaderboard-table th:last-child, 
+#leaderboard-table td:last-child {
+    text-align: right;
+}
+
 #leaderboard-table th {
     background-color: var(--bg-tertiary);
     font-weight: 600;
@@ -1222,6 +1227,75 @@ body {
 
 #leaderboard-table tr:hover {
     background-color: var(--primary-50);
+}
+
+/* Special Rank Styling */
+#leaderboard-table tr.rank-gold {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.12) 0%, transparent 100%) !important;
+}
+#leaderboard-table tr.rank-gold td {
+    border-bottom-color: rgba(255, 215, 0, 0.2);
+}
+#leaderboard-table tr.rank-gold .rank-gold-icon {
+    color: #fbbf24;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.4));
+}
+#leaderboard-table tr.rank-gold .player-name {
+    font-weight: 700;
+    color: #92400e;
+}
+
+#leaderboard-table tr.rank-silver {
+    background: linear-gradient(90deg, rgba(148, 163, 184, 0.1) 0%, transparent 100%) !important;
+}
+#leaderboard-table tr.rank-silver td {
+    border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+#leaderboard-table tr.rank-silver .rank-silver-icon {
+    color: #94a3b8;
+    filter: drop-shadow(0 0 4px rgba(148, 163, 184, 0.3));
+}
+#leaderboard-table tr.rank-silver .player-name {
+    font-weight: 600;
+    color: #334155;
+}
+
+#leaderboard-table tr.rank-bronze {
+    background: linear-gradient(90deg, rgba(180, 83, 9, 0.08) 0%, transparent 100%) !important;
+}
+#leaderboard-table tr.rank-bronze td {
+    border-bottom-color: rgba(180, 83, 9, 0.15);
+}
+#leaderboard-table tr.rank-bronze .rank-bronze-icon {
+    color: #b45309;
+    filter: drop-shadow(0 0 4px rgba(180, 83, 9, 0.3));
+}
+#leaderboard-table tr.rank-bronze .player-name {
+    font-weight: 600;
+    color: #78350f;
+}
+
+.rank-icon {
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.rank-number {
+    display: inline-block;
+    width: 1.5rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.player-name {
+    font-weight: 500;
+}
+
+.pixel-count {
+    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+    font-weight: 600;
+    color: var(--primary-600);
 }
 
 #leaderboard-modal .modal-footer {

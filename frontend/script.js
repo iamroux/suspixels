@@ -232,13 +232,25 @@ class PixelCanvas {
                 if (!response.ok) throw new Error('Failed to fetch leaderboard');
                 const leaderboard = await response.json();
 
-                leaderboard.forEach((entry) => {
+                leaderboard.forEach((entry, index) => {
                     const row = document.createElement('tr');
+                    
+                    // Add special rank classes for top 3
+                    if (index === 0) row.classList.add('rank-gold');
+                    else if (index === 1) row.classList.add('rank-silver');
+                    else if (index === 2) row.classList.add('rank-bronze');
+                    
                     const nameCell = document.createElement('td');
                     const countCell = document.createElement('td');
 
-                    nameCell.textContent = entry.name;
-                    countCell.textContent = entry.pixelCount;
+                    // Add rank number and trophy icons for top 3
+                    let rankPrefix = `<span class="rank-number">${index + 1}.</span>`;
+                    if (index === 0) rankPrefix = `<i class="fas fa-trophy rank-icon rank-gold-icon"></i> ${rankPrefix}`;
+                    else if (index === 1) rankPrefix = `<i class="fas fa-medal rank-icon rank-silver-icon"></i> ${rankPrefix}`;
+                    else if (index === 2) rankPrefix = `<i class="fas fa-medal rank-icon rank-bronze-icon"></i> ${rankPrefix}`;
+
+                    nameCell.innerHTML = `${rankPrefix}<span class="player-name">${entry.name}</span>`;
+                    countCell.innerHTML = `<span class="pixel-count">${entry.pixelCount.toLocaleString()}</span>`;
 
                     row.appendChild(nameCell);
                     row.appendChild(countCell);
