@@ -177,6 +177,59 @@
         </div>
     </div>
 
+    <!-- Dashboard Modal -->
+    <div id="dashboard-modal" class="modal">
+        <div class="modal-content dashboard-modal-content">
+            <div class="modal-header">
+                <button class="modal-close" id="dashboard-modal-close"><i class="fas fa-times"></i></button>
+                <h2>Your Profile</h2>
+                <p>Track your contributions and manage account</p>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Stats Section -->
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-paint-brush"></i>
+                        <div class="stat-value" id="dash-pixel-count">0</div>
+                        <div class="stat-label">Pixels Placed</div>
+                    </div>
+                </div>
+
+                <!-- Settings Form -->
+                <form id="profile-form" class="auth-form">
+                    <div class="input-group">
+                        <label for="profile-name">Name</label>
+                        <input type="text" id="profile-name" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="profile-email">Email</label>
+                        <input type="email" id="profile-email" readonly style="background-color: rgba(255,255,255,0.05); cursor: not-allowed; border-color: transparent;">
+                        <small style="color: var(--text-tertiary);">Email cannot be changed yet</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="profile-password">New Password (leave blank to keep current)</label>
+                        <input type="password" id="profile-password" placeholder="••••••••">
+                    </div>
+                    
+                    <div class="dashboard-actions">
+                        <button type="submit" class="primary-btn full-width" id="save-profile-btn">
+                            <span>Save Changes</span>
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer dashboard-footer">
+                <button class="logout-btn-large" id="dash-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Log Out</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Leaderboard Modal -->
     <div id="leaderboard-modal" class="modal">
         <div class="modal-content">

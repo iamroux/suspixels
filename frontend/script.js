@@ -66,6 +66,7 @@ class PixelCanvas {
         this.setupEventListeners();
         this.setupColorPicker();
         this.initUsersPopover();
+        this.initDashboardModal();
         this.initColdStartBanner();
         this.updateAuthUI();
         this.connectWebSocket();
@@ -215,6 +216,87 @@ class PixelCanvas {
         });
     }
 
+    initDashboardModal() {
+        const modal = document.getElementById('dashboard-modal');
+        const closeBtn = document.getElementById('dashboard-modal-close');
+        const logoutBtn = document.getElementById('dash-logout-btn');
+        const profileForm = document.getElementById('profile-form');
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            this.logout();
+            closeModal();
+        });
+
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('profile-name').value;
+            const password = document.getElementById('profile-password').value;
+            
+            const updateData = { name };
+            if (password) updateData.password = password;
+
+            try {
+                const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.authToken}`
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (!response.ok) throw new Error('Update failed');
+                
+                const updatedUser = await response.json();
+                this.user = updatedUser;
+                localStorage.setItem('pixelUser', JSON.stringify(updatedUser));
+                this.userName = updatedUser.name;
+                this.updateAuthUI();
+                
+                alert('Profile updated successfully!');
+                document.getElementById('profile-password').value = '';
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    }
+
+    async openDashboard() {
+        if (!this.authToken) return;
+
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
+                headers: { 'Authorization': `Bearer ${this.authToken}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch profile');
+
+            const data = await response.json();
+            
+            // Populate modal
+            document.getElementById('dash-pixel-count').textContent = data.pixelCount.toLocaleString();
+            document.getElementById('profile-name').value = data.name;
+            document.getElementById('profile-email').value = data.email;
+            
+            document.getElementById('dashboard-modal').style.display = 'block';
+        } catch (error) {
+            console.error('Dashboard error:', error);
+            alert('Could not load dashboard. Please try logging in again.');
+        }
+    }
+
     async login(email, password) {
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/auth/login`, {
@@ -292,15 +374,12 @@ class PixelCanvas {
         if (this.user) {
             const initial = this.user.name.charAt(0).toUpperCase();
             profileContainer.innerHTML = `
-                <div class="profile-info">
+                <div class="profile-info clickable" id="open-profile-btn" title="Open Dashboard">
                     <div class="user-avatar">${initial}</div>
                     <span class="user-name-label">${this.user.name}</span>
-                    <button class="logout-btn" title="Logout" id="logout-btn">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
                 </div>
             `;
-            document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+            document.getElementById('open-profile-btn').addEventListener('click', () => this.openDashboard());
             
             // Hide "Login to Edit" messages
             const lockedMsg = document.querySelector('.edit-locked-message');

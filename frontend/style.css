@@ -1377,6 +1377,27 @@ body {
     .connection-status {
         font-size: 0.75rem;
     }
+
+    .user-name-label {
+        display: none;
+    }
+
+    .profile-info {
+        padding: 0.25rem !important;
+        gap: 0 !important;
+    }
+
+    .user-count-text {
+        display: none;
+    }
+
+    .header-left {
+        gap: 0.5rem !important;
+    }
+
+    .header-right {
+        gap: 0.5rem !important;
+    }
 }
 
 /* Auth Modal Styles */
@@ -1544,6 +1565,17 @@ body {
     background-color: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: var(--radius-full);
+    transition: all 0.2s ease;
+}
+
+.profile-info.clickable {
+    cursor: pointer;
+}
+
+.profile-info.clickable:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
 }
 
 .user-avatar {
@@ -1619,4 +1651,83 @@ body {
 .mode-toggle-container:hover .edit-locked-message.visible {
     opacity: 1;
     transform: translateX(-50%) translateY(-5px);
+}
+
+/* Dashboard Modal Styles */
+.dashboard-modal-content {
+    max-width: 450px !important;
+}
+
+.dashboard-stats {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+    color: white;
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    width: 100%;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-card i {
+    font-size: 1.5rem;
+    opacity: 0.8;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dashboard-actions {
+    margin-top: 1rem;
+}
+
+.dashboard-footer {
+    padding: 0 !important;
+    overflow: hidden;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.logout-btn-large {
+    width: 100%;
+    padding: 1.25rem;
+    background-color: var(--bg-tertiary);
+    border: none;
+    color: #ef4444;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.logout-btn-large:hover {
+    background-color: #fee2e2;
+}
+
+@media (max-width: 480px) {
+    .dashboard-modal-content {
+        width: 95% !important;
+    }
 }
