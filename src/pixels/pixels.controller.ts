@@ -58,7 +58,7 @@ export class PixelsController {
     }
     const result = await this.pixelsService.setPixel({
       ...createPixelDto,
-      insertedBy: user.name,
+      userName: user.name,
       userId: user.userId,
     });
     if (this.isDevelopment) {
@@ -116,7 +116,7 @@ export class PixelsController {
         if (op.action === 'set') {
           return await this.pixelsService.setPixel({
             ...op.data,
-            insertedBy: user.name,
+            userName: user.name,
             userId: user.userId,
           });
         } else if (op.action === 'delete') {

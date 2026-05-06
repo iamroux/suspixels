@@ -14,8 +14,7 @@ interface PendingPixel {
   x: number;
   y: number;
   color: string;
-  insertedBy?: string;
-  userId?: string;
+  updatedById?: string;
   timestamp: number;
 }
 
@@ -100,15 +99,14 @@ export class PixelsService {
     return pixels.map(this.toResponseDto);
   }
 
-  async setPixel(createPixelDto: CreatePixelDto & { userId?: string }): Promise<PixelResponseDto> {
-    const { x, y, color, insertedBy, userId } = createPixelDto;
+  async setPixel(createPixelDto: CreatePixelDto & { userId?: string, userName?: string }): Promise<PixelResponseDto> {
+    const { x, y, color, userId, userName } = createPixelDto;
 
     const pendingPixel: PendingPixel = {
       x,
       y,
       color,
-      insertedBy,
-      userId,
+      updatedById: userId,
       timestamp: Date.now(),
     };
 
@@ -126,7 +124,7 @@ export class PixelsService {
       x,
       y,
       color,
-      insertedBy,
+      insertedBy: userName,
       userId,
       updatedAt: new Date(),
     };
@@ -137,7 +135,10 @@ export class PixelsService {
   }
 
   async getPixelMetadata(x: number, y: number): Promise<PixelResponseDto | null> {
-    const pixel = await this.pixelRepository.findOne({ where: { x, y } });
+    const pixel = await this.pixelRepository.findOne({ 
+      where: { x, y },
+      relations: ['updatedBy']
+    });
     return pixel ? this.toResponseDto(pixel) : null;
   }
 
@@ -206,8 +207,7 @@ export class PixelsService {
       x: pixel.x,
       y: pixel.y,
       color: pixel.color,
-      insertedBy: pixel.insertedBy,
-      userId: pixel.userId,
+      updatedById: pixel.updatedById,
     }));
 
     try {
@@ -216,7 +216,7 @@ export class PixelsService {
         .insert()
         .into(Pixel)
         .values(values)
-        .orUpdate(['color', 'inserted_by', 'user_id', 'updated_at'], ['x', 'y'])
+        .orUpdate(['color', 'updated_by', 'updated_at'], ['x', 'y'])
         .execute();
 
       await this.redisClient.del(keys);
@@ -241,12 +241,12 @@ export class PixelsService {
   async getLeaderboard(): Promise<{ name: string; pixelCount: number }[]> {
     return this.pixelRepository
       .createQueryBuilder('pixel')
-      .select('pixel.insertedBy', 'name')
+      .innerJoin('pixel.updatedBy', 'user')
+      .select('user.name', 'name')
       .addSelect('COUNT(*)', 'pixelCount')
-      .groupBy('pixel.insertedBy')
-      .addGroupBy('pixel.userId')
+      .groupBy('user.name')
       .orderBy('COUNT(*)', 'DESC')
-      .limit(100)
+      .limit(10)
       .getRawMany();
   }
 
@@ -255,8 +255,8 @@ export class PixelsService {
       x: pixel.x,
       y: pixel.y,
       color: pixel.color,
-      insertedBy: pixel.insertedBy,
-      userId: pixel.userId,
+      insertedBy: pixel.updatedBy?.name || 'Anonymous',
+      userId: pixel.updatedById,
       updatedAt: pixel.updatedAt,
     };
   }

@@ -25,18 +25,12 @@ export class Pixel {
   @Column({ length: 7 })
   color: string;
 
-  @Column({ length: 50, default: 'Anonymous', name: 'inserted_by' })
-  insertedBy: string;
-
-  @Column({ name: 'user_id', nullable: true })
-  userId: string;
+  @Column({ name: 'updated_by', nullable: true })
+  updatedById: string;
 
   @ManyToOne(() => User, (user) => user.pixels, { nullable: true })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  @JoinColumn({ name: 'updated_by' })
+  updatedBy: User;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;

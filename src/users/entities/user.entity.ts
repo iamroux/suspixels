@@ -24,7 +24,7 @@ export class User {
   @Exclude()
   password: string;
 
-  @OneToMany(() => Pixel, (pixel: Pixel) => pixel.user)
+  @OneToMany(() => Pixel, (pixel: Pixel) => pixel.updatedBy)
   pixels: Pixel[];
 
   @CreateDateColumn({ name: 'created_at' })
