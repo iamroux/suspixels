@@ -8,9 +8,13 @@ import { RedisModule } from './redis/redis.module';
 import appConfig from './config/app.config';
 import redisConfig from './config/redis.config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
+    AuthModule,
+    UsersModule,
     PixelsModule,
     DatabaseModule,
     ConfigModule.forRoot({

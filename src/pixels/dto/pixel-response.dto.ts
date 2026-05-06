@@ -14,5 +14,8 @@ export class PixelResponseDto {
   insertedBy?: string;
 
   @ApiProperty({ required: false })
+  userId?: string;
+
+  @ApiProperty({ required: false })
   updatedAt?: Date;
 }

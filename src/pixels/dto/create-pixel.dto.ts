@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsString, IsHexColor } from 'class-validator';
+import { IsInt, IsString, IsHexColor, IsOptional } from 'class-validator';
 
 export class CreatePixelDto {
   @ApiProperty({ example: 199 })
@@ -17,5 +17,6 @@ export class CreatePixelDto {
 
   @ApiProperty({ example: 'Saqib Mir' })
   @IsString()
-  insertedBy: string;
+  @IsOptional()
+  insertedBy?: string;
 }

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, WebSocket } from 'ws';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
   cors: true,
@@ -18,7 +19,10 @@ export class WebsocketGateway
 {
   private readonly logger = new Logger(WebsocketGateway.name);
   
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   @WebSocketServer()
   server: Server;
@@ -31,11 +35,28 @@ export class WebsocketGateway
     client.on('message', (raw: Buffer) => {
       try {
         const msg = JSON.parse(raw.toString());
-        if (msg?.type === 'identify' && typeof msg.name === 'string') {
-          this.clients.set(client, msg.name.trim().slice(0, 40));
+        if (msg?.type === 'identify') {
+          let name = msg.name?.trim().slice(0, 40) || 'Guest';
+          
+          if (msg.token) {
+            try {
+              const payload = this.jwtService.verify(msg.token);
+              name = payload.name;
+              this.logger.log(`Client identified as authenticated user: ${name}`);
+            } catch (e) {
+              this.logger.warn(`Invalid token from client: ${e.message}`);
+              // Fallback to guest name or reject? For robustness, let's keep guest name
+            }
+          } else {
+            this.logger.log(`Client identified as guest: ${name}`);
+          }
+
+          this.clients.set(client, name);
           this.broadcastUserCount();
         }
-      } catch {}
+      } catch (e) {
+        this.logger.error(`Error handling message: ${e.message}`);
+      }
     });
     this.broadcastUserCount();
   }

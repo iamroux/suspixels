@@ -10,4 +10,5 @@ export default registerAs('app', () => ({
     .split(',')
     .map((o) => o.trim())
     .filter((o) => o.length > 0),
+  jwtSecret: process.env.JWT_SECRET || 'fallbackSecretForDevOnly',
 }));

@@ -5,7 +5,10 @@ import {
   Index,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('pixels')
 @Index(['x', 'y'], { unique: true })
@@ -24,6 +27,13 @@ export class Pixel {
 
   @Column({ length: 50, default: 'Anonymous', name: 'inserted_by' })
   insertedBy: string;
+
+  @Column({ name: 'user_id', nullable: true })
+  userId: string;
+
+  @ManyToOne(() => User, (user) => user.pixels, { nullable: true })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
