@@ -192,6 +192,27 @@ class PixelCanvas {
             this.updateAuthUI();
             this.sendIdentify();
         });
+
+        // Close logic
+        const closeBtn = document.getElementById('auth-modal-close');
+        const closeModal = () => {
+            if (this.userName || this.user) {
+                modal.style.display = 'none';
+            } else {
+                // If they have no name/user yet, we can't let them close without picking guest mode
+                guestBtn.click();
+            }
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
+        });
     }
 
     async login(email, password) {
