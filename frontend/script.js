@@ -241,12 +241,14 @@ class PixelCanvas {
 
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = document.getElementById('save-profile-btn');
             const name = document.getElementById('profile-name').value;
             const password = document.getElementById('profile-password').value;
             
             const updateData = { name };
             if (password) updateData.password = password;
 
+            this.setLoading(submitBtn, true);
             try {
                 const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
                     method: 'PATCH',
@@ -269,12 +271,36 @@ class PixelCanvas {
                 document.getElementById('profile-password').value = '';
             } catch (error) {
                 alert(error.message);
+            } finally {
+                this.setLoading(submitBtn, false);
             }
         });
     }
 
+    setLoading(button, isLoading) {
+        if (!button) return;
+        if (isLoading) {
+            button.classList.add('btn-loading');
+            button.disabled = true;
+        } else {
+            button.classList.remove('btn-loading');
+            button.disabled = false;
+        }
+    }
+
     async openDashboard() {
         if (!this.authToken) return;
+
+        const modal = document.getElementById('dashboard-modal');
+        const pixelCountEl = document.getElementById('dash-pixel-count');
+        const nameInput = document.getElementById('profile-name');
+        const emailInput = document.getElementById('profile-email');
+
+        // Show modal and skeletons
+        modal.style.display = 'block';
+        pixelCountEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
+        nameInput.value = 'Loading...';
+        emailInput.value = 'Loading...';
 
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
@@ -286,18 +312,19 @@ class PixelCanvas {
             const data = await response.json();
             
             // Populate modal
-            document.getElementById('dash-pixel-count').textContent = data.pixelCount.toLocaleString();
-            document.getElementById('profile-name').value = data.name;
-            document.getElementById('profile-email').value = data.email;
-            
-            document.getElementById('dashboard-modal').style.display = 'block';
+            pixelCountEl.textContent = data.pixelCount.toLocaleString();
+            nameInput.value = data.name;
+            emailInput.value = data.email;
         } catch (error) {
             console.error('Dashboard error:', error);
+            modal.style.display = 'none';
             alert('Could not load dashboard. Please try logging in again.');
         }
     }
 
     async login(email, password) {
+        const btn = document.querySelector('#login-form button[type="submit"]');
+        this.setLoading(btn, true);
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/auth/login`, {
                 method: 'POST',
@@ -314,10 +341,14 @@ class PixelCanvas {
             this.handleAuthSuccess(data);
         } catch (error) {
             alert(error.message);
+        } finally {
+            this.setLoading(btn, false);
         }
     }
 
     async register(name, email, password) {
+        const btn = document.querySelector('#register-form button[type="submit"]');
+        this.setLoading(btn, true);
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/auth/register`, {
                 method: 'POST',
@@ -334,6 +365,8 @@ class PixelCanvas {
             this.handleAuthSuccess(data);
         } catch (error) {
             alert(error.message);
+        } finally {
+            this.setLoading(btn, false);
         }
     }
 
@@ -486,17 +519,25 @@ class PixelCanvas {
         document.getElementById('leaderboard-btn').addEventListener('click', async () => {
             const modal = document.getElementById('leaderboard-modal');
             const tableBody = document.getElementById('leaderboard-table').querySelector('tbody');
-            tableBody.innerHTML = ''; // Clear previous data
+            
+            // Show modal and skeleton loading immediately
+            modal.style.display = 'block';
+            tableBody.innerHTML = Array(5).fill(0).map(() => `
+                <tr>
+                    <td><div class="skeleton-dark leaderboard-skeleton-row"></div></td>
+                    <td><div class="skeleton-dark leaderboard-skeleton-row"></div></td>
+                </tr>
+            `).join('');
 
             try {
                 const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/leaderboard`);
                 if (!response.ok) throw new Error('Failed to fetch leaderboard');
                 const leaderboard = await response.json();
 
+                tableBody.innerHTML = ''; // Clear skeletons
                 leaderboard.forEach((entry, index) => {
                     const row = document.createElement('tr');
                     
-                    // Add special rank classes for top 3
                     if (index === 0) row.classList.add('rank-gold');
                     else if (index === 1) row.classList.add('rank-silver');
                     else if (index === 2) row.classList.add('rank-bronze');
@@ -504,7 +545,6 @@ class PixelCanvas {
                     const nameCell = document.createElement('td');
                     const countCell = document.createElement('td');
 
-                    // Add rank number and trophy icons for top 3
                     let rankPrefix = `<span class="rank-number">${index + 1}.</span>`;
                     if (index === 0) rankPrefix = `<i class="fas fa-trophy rank-icon rank-gold-icon"></i> ${rankPrefix}`;
                     else if (index === 1) rankPrefix = `<i class="fas fa-medal rank-icon rank-silver-icon"></i> ${rankPrefix}`;
@@ -517,11 +557,9 @@ class PixelCanvas {
                     row.appendChild(countCell);
                     tableBody.appendChild(row);
                 });
-
-                modal.style.display = 'block';
             } catch (error) {
-                console.error('Error loading leaderboard:', error);
-                alert('Failed to load leaderboard');
+                console.error('Leaderboard error:', error);
+                tableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 2rem;">Failed to load leaderboard</td></tr>';
             }
         });
 

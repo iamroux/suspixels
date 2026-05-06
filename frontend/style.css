@@ -1731,3 +1731,67 @@ body {
         width: 95% !important;
     }
 }
+
+/* Loading & Skeleton Styles */
+@keyframes shimmer {
+    0% { background-position: -468px 0; }
+    100% { background-position: 468px 0; }
+}
+
+.skeleton {
+    background: #f6f7f8;
+    background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+    background-repeat: no-repeat;
+    background-size: 800px 104px;
+    display: inline-block;
+    position: relative;
+    animation: shimmer 1.5s infinite linear;
+    border-radius: 4px;
+}
+
+/* For Dark Mode skeletons */
+.skeleton-dark {
+    background: rgba(255, 255, 255, 0.05);
+    background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 20%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.05) 100%);
+    background-size: 800px 104px;
+    animation: shimmer 1.5s infinite linear;
+}
+
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: "";
+    position: absolute;
+    width: 1.25rem;
+    height: 1.25rem;
+    top: 50%;
+    left: 50%;
+    margin-top: -0.625rem;
+    margin-left: -0.625rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Leaderboard Skeleton */
+.leaderboard-skeleton-row {
+    height: 40px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+/* Dashboard Skeleton */
+.dash-stat-skeleton {
+    height: 60px;
+    width: 120px;
+    margin: 0 auto;
+}
