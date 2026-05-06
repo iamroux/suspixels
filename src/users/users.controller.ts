@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Req, Patch, Body } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Patch, Body, NotFoundException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 
@@ -11,6 +11,11 @@ export class UsersController {
   async getProfile(@Req() req: any) {
     const userId = req.user.userId;
     const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
     const pixelCount = await this.usersService.getPixelCount(userId);
     
     const { password, ...result } = user;
