@@ -45,9 +45,10 @@ export class WebsocketGateway
               this.logger.log(`Client identified as authenticated user: ${name}`);
             } catch (e) {
               this.logger.warn(`Invalid token from client: ${e.message}`);
-              // Fallback to guest name or reject? For robustness, let's keep guest name
+              name = `${name} (Guest)`;
             }
           } else {
+            name = `${name} (Guest)`;
             this.logger.log(`Client identified as guest: ${name}`);
           }
 
