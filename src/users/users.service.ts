@@ -1,23 +1,17 @@
-import { Injectable, ConflictException, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Pixel } from '../pixels/entities/pixel.entity';
 import * as bcrypt from 'bcrypt';
-import Redis from 'ioredis';
-import { REDIS_CLIENT } from '../redis/redis.constants';
 
 @Injectable()
 export class UsersService {
-  private readonly PIXEL_COUNT_TTL = 60;
-
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Pixel)
     private readonly pixelRepository: Repository<Pixel>,
-    @Inject(REDIS_CLIENT)
-    private readonly redisClient: Redis,
   ) {}
 
   async create(userData: Partial<User>): Promise<User> {
@@ -51,13 +45,7 @@ export class UsersService {
   }
 
   async getPixelCount(userId: string): Promise<number> {
-    const key = `user_pixel_count:${userId}`;
-    const cached = await this.redisClient.get(key);
-    if (cached !== null) return parseInt(cached, 10);
-
-    const count = await this.pixelRepository.count({ where: { updatedById: userId } });
-    await this.redisClient.setex(key, this.PIXEL_COUNT_TTL, count.toString());
-    return count;
+    return this.pixelRepository.count({ where: { updatedById: userId } });
   }
 
   async update(userId: string, updateData: any): Promise<User> {

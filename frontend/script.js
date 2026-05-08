@@ -49,6 +49,11 @@ class PixelCanvas {
         // Pixel info hover
         this.pixelInfoTimeout = null;
 
+        // Cursor preview (grid hover)
+        this.cursorGridX = -1;
+        this.cursorGridY = -1;
+        this._cursorRafPending = false;
+
         // Auth state (token lives in httpOnly cookie — never in JS)
         this.user = JSON.parse(localStorage.getItem('pixelUser') || 'null');
         this.userName = this.user ? this.user.name : (localStorage.getItem('pixelUserName') || '');
@@ -723,6 +728,18 @@ class PixelCanvas {
         if (this.isPanning) {
             this.updatePan(x, y);
         }
+
+        if (this.isEditMode) {
+            this.cursorGridX = gridPos.x;
+            this.cursorGridY = gridPos.y;
+            if (!this._cursorRafPending) {
+                this._cursorRafPending = true;
+                requestAnimationFrame(() => {
+                    this._cursorRafPending = false;
+                    this.render();
+                });
+            }
+        }
     }
 
     handleMouseUp(e) {
@@ -733,9 +750,12 @@ class PixelCanvas {
 
     handleMouseLeave() {
         this.hidePixelInfo();
+        this.cursorGridX = -1;
+        this.cursorGridY = -1;
         if (this.isPanning) {
             this.endPan();
         }
+        if (this.isEditMode) this.render();
     }
 
     handleWheel(e) {
@@ -1465,6 +1485,8 @@ class PixelCanvas {
             const [x, y] = key.split(',').map(Number);
             this.renderPixel(x, y, color);
         });
+        if (this.zoom >= 8) this.drawGridLines();
+        this.drawCursorPreview();
     }
 
     renderPixel(gridX, gridY, color) {
@@ -1488,6 +1510,67 @@ class PixelCanvas {
         const screenPos = this.gridToScreen(gridX, gridY);
         const size = this.pixelSize * this.zoom;
         this.ctx.clearRect(screenPos.x, screenPos.y, size, size);
+    }
+
+    drawGridLines() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const canvasPixelW = this.gridSize * this.pixelSize * this.zoom;
+        const canvasPixelH = this.gridSize * this.pixelSize * this.zoom;
+        const originX = (w - canvasPixelW) / 2 + this.viewportX;
+        const originY = (h - canvasPixelH) / 2 + this.viewportY;
+        const cellSize = this.pixelSize * this.zoom;
+
+        const opacity = Math.min(0.15, 0.04 + (this.zoom - 8) / 32 * 0.11);
+
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(originX, originY, canvasPixelW, canvasPixelH);
+        this.ctx.clip();
+        this.ctx.strokeStyle = `rgba(0, 0, 0, ${opacity})`;
+        this.ctx.lineWidth = 0.5;
+
+        const startGX = Math.max(0, Math.floor(-originX / cellSize));
+        const endGX = Math.min(this.gridSize, Math.ceil((w - originX) / cellSize));
+        const startGY = Math.max(0, Math.floor(-originY / cellSize));
+        const endGY = Math.min(this.gridSize, Math.ceil((h - originY) / cellSize));
+
+        this.ctx.beginPath();
+        for (let gx = startGX; gx <= endGX; gx++) {
+            const sx = originX + gx * cellSize;
+            this.ctx.moveTo(sx, originY);
+            this.ctx.lineTo(sx, originY + canvasPixelH);
+        }
+        for (let gy = startGY; gy <= endGY; gy++) {
+            const sy = originY + gy * cellSize;
+            this.ctx.moveTo(originX, sy);
+            this.ctx.lineTo(originX + canvasPixelW, sy);
+        }
+        this.ctx.stroke();
+        this.ctx.restore();
+    }
+
+    drawCursorPreview() {
+        if (!this.isEditMode || !this.isValidGridPosition(this.cursorGridX, this.cursorGridY)) return;
+
+        const screenPos = this.gridToScreen(this.cursorGridX, this.cursorGridY);
+        const size = this.pixelSize * this.zoom;
+
+        this.ctx.save();
+        if (this.isErasing) {
+            this.ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+            this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+        } else {
+            const r = parseInt(this.selectedColor.slice(1, 3), 16);
+            const g = parseInt(this.selectedColor.slice(3, 5), 16);
+            const b = parseInt(this.selectedColor.slice(5, 7), 16);
+            this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.45)`;
+            this.ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.9)`;
+        }
+        this.ctx.fillRect(screenPos.x, screenPos.y, size, size);
+        this.ctx.lineWidth = Math.max(1, size * 0.06);
+        this.ctx.strokeRect(screenPos.x, screenPos.y, size, size);
+        this.ctx.restore();
     }
 
     connectWebSocket() {

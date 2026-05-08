@@ -301,15 +301,15 @@ body {
     transform: translateX(-50%) translateZ(0);
     -webkit-transform: translateX(-50%) translateZ(0);
     padding: 0.5rem 1rem;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background-color: rgba(10, 14, 26, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     z-index: 60;
     pointer-events: auto;
     width: max-content;
@@ -371,13 +371,13 @@ body {
     gap: 1rem;
     margin-left: auto;
     padding-left: 1rem;
-    border-left: 1px solid var(--border-light);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .pending-changes-info {
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--primary-600);
+    color: var(--primary-300);
 }
 
 .action-btn {
@@ -468,14 +468,14 @@ body {
 
 .color-label {
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.55);
 }
 
 #selected-color {
     width: 1.75rem;
     height: 1.75rem;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border-medium);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: var(--shadow-sm);
     transition: transform var(--transition-fast) ease;
 }
@@ -744,7 +744,7 @@ body {
         margin-left: 0.25rem !important;
         padding-left: 0.25rem !important;
         border-top: none !important;
-        border-left: 1px solid var(--border-light) !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
         padding-top: 0 !important;
         width: auto !important;
         flex-direction: row !important;
