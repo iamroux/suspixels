@@ -513,7 +513,9 @@ class PixelCanvas {
             if (!this.isEditMode) return;
             this.isErasing = !this.isErasing;
             document.getElementById('eraser-btn').classList.toggle('active', this.isErasing);
-            document.getElementById('selected-color').style.backgroundColor = this.isErasing ? 'transparent' : this.selectedColor;
+            document.getElementById('selected-color').style.backgroundColor = this.isErasing ? '#FFFFFF' : this.selectedColor;
+            document.getElementById('brush-size-picker').style.opacity = this.isErasing ? '1' : '0.35';
+            document.getElementById('brush-size-picker').style.pointerEvents = this.isErasing ? 'auto' : 'none';
         });
 
         // Continuous Draw tool (Mobile)
@@ -1081,9 +1083,10 @@ class PixelCanvas {
     async placePixel(x, y) {
         if (!this.isEditMode) return;
         try {
-            const offset = Math.floor((this.brushSize - 1) / 2);
-            for (let dy = 0; dy < this.brushSize; dy++) {
-                for (let dx = 0; dx < this.brushSize; dx++) {
+            const size = this.isErasing ? this.brushSize : 1;
+            const offset = Math.floor((size - 1) / 2);
+            for (let dy = 0; dy < size; dy++) {
+                for (let dx = 0; dx < size; dx++) {
                     const px = x - offset + dx;
                     const py = y - offset + dy;
                     if (this.isValidGridPosition(px, py)) {
@@ -1560,7 +1563,8 @@ class PixelCanvas {
     drawCursorPreview() {
         if (!this.isEditMode || !this.isValidGridPosition(this.cursorGridX, this.cursorGridY)) return;
 
-        const offset = Math.floor((this.brushSize - 1) / 2);
+        const brushSize = this.isErasing ? this.brushSize : 1;
+        const offset = Math.floor((brushSize - 1) / 2);
         const size = this.pixelSize * this.zoom;
 
         this.ctx.save();
@@ -1575,8 +1579,8 @@ class PixelCanvas {
             this.ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.9)`;
         }
 
-        for (let dy = 0; dy < this.brushSize; dy++) {
-            for (let dx = 0; dx < this.brushSize; dx++) {
+        for (let dy = 0; dy < brushSize; dy++) {
+            for (let dx = 0; dx < brushSize; dx++) {
                 const px = this.cursorGridX - offset + dx;
                 const py = this.cursorGridY - offset + dy;
                 if (this.isValidGridPosition(px, py)) {
@@ -1588,7 +1592,7 @@ class PixelCanvas {
 
         const topLeft = this.gridToScreen(this.cursorGridX - offset, this.cursorGridY - offset);
         this.ctx.lineWidth = Math.max(1, size * 0.06);
-        this.ctx.strokeRect(topLeft.x, topLeft.y, size * this.brushSize, size * this.brushSize);
+        this.ctx.strokeRect(topLeft.x, topLeft.y, size * brushSize, size * brushSize);
         this.ctx.restore();
     }
 
