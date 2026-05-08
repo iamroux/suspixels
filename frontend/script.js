@@ -519,11 +519,7 @@ class PixelCanvas {
         // Eraser tool
         document.getElementById('eraser-btn').addEventListener('click', () => {
             if (!this.isEditMode) return;
-            this.isErasing = !this.isErasing;
-            document.getElementById('eraser-btn').classList.toggle('active', this.isErasing);
-            document.getElementById('selected-color').style.backgroundColor = this.isErasing ? '#FFFFFF' : this.selectedColor;
-            document.getElementById('brush-size-picker').style.opacity = this.isErasing ? '1' : '0.35';
-            document.getElementById('brush-size-picker').style.pointerEvents = this.isErasing ? 'auto' : 'none';
+            this.setErasing(!this.isErasing);
         });
 
         // Continuous Draw tool (Mobile)
@@ -625,8 +621,7 @@ class PixelCanvas {
                 if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
                     this.selectedColor = hexInput.value.toUpperCase();
                     document.getElementById('selected-color').style.backgroundColor = this.selectedColor;
-                    this.isErasing = false;
-                    document.getElementById('eraser-btn').classList.remove('active');
+                    this.setErasing(false);
                     this.addRecentColor(this.selectedColor);
                 }
                 modal.style.display = 'none';
@@ -659,6 +654,23 @@ class PixelCanvas {
                 document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
             });
+        });
+    }
+
+    setErasing(state) {
+        this.isErasing = state;
+        document.getElementById('eraser-btn').classList.toggle('active', state);
+        document.getElementById('selected-color').style.backgroundColor = state ? '#FFFFFF' : this.selectedColor;
+        document.getElementById('brush-size-picker').style.display = state ? 'flex' : 'none';
+        
+        // Hide color tools when erasing to keep toolbar clean
+        const colorTools = [
+            document.getElementById('color-picker-btn'),
+            document.getElementById('color-wheel-btn'),
+            document.querySelector('.selected-color-display')
+        ];
+        colorTools.forEach(el => {
+            if (el) el.style.display = state ? 'none' : '';
         });
     }
 
@@ -698,8 +710,7 @@ class PixelCanvas {
             this.selectedColor = color;
             document.getElementById('selected-color').style.backgroundColor = color;
             this.addRecentColor(color);
-            this.isErasing = false;
-            document.getElementById('eraser-btn').classList.remove('active');
+            this.setErasing(false);
 
             const indicator = document.getElementById('color-picker-indicator');
             if (indicator) {
@@ -1056,6 +1067,7 @@ class PixelCanvas {
             modeBtn.querySelector('i').className = 'fas fa-edit';
             modeBtn.querySelector('span').textContent = 'Edit Mode';
             editActions.style.display = 'flex';
+            document.getElementById('floating-action-bar').style.display = 'flex';
             
             // Enable tool buttons
             toolButtons.forEach(btn => btn.removeAttribute('disabled'));
@@ -1065,6 +1077,7 @@ class PixelCanvas {
             modeBtn.querySelector('i').className = 'fas fa-eye';
             modeBtn.querySelector('span').textContent = 'Explore Mode';
             editActions.style.display = 'none';
+            document.getElementById('floating-action-bar').style.display = 'none';
             
             // Disable tool buttons
             toolButtons.forEach(btn => btn.setAttribute('disabled', 'true'));
@@ -1143,6 +1156,12 @@ class PixelCanvas {
         applyBtn.disabled = count === 0;
         discardBtn.disabled = count === 0;
         undoBtn.disabled = count === 0;
+        
+        if (count > 0) {
+            applyBtn.classList.add('glow');
+        } else {
+            applyBtn.classList.remove('glow');
+        }
     }
 
     undoPendingChange() {
@@ -1790,8 +1809,22 @@ class PixelCanvas {
 
             this.render();
             if (this._hideColdStartBanner) this._hideColdStartBanner();
+            
+            // Hide startup loader
+            const loader = document.getElementById('startup-loader');
+            if (loader) {
+                loader.classList.add('hidden');
+                setTimeout(() => loader.style.display = 'none', 500); // Remove from DOM flow after fade
+            }
         } catch (error) {
             console.error('Failed to load pixels:', error);
+            const loader = document.getElementById('startup-loader');
+            if (loader) {
+                const text = loader.querySelector('.loader-text');
+                if (text) text.textContent = 'Failed to connect. Please refresh.';
+                const spinner = loader.querySelector('.loader-spinner');
+                if (spinner) spinner.style.display = 'none';
+            }
         }
     }
 }
