@@ -304,10 +304,20 @@ class PixelCanvas {
                 credentials: 'include',
             });
 
-            if (!response.ok) throw new Error('Failed to fetch profile');
+            if (!response.ok) {
+                if (response.status === 401) {
+                    this.user = null;
+                    localStorage.removeItem('pixelUser');
+                    modal.style.display = 'none';
+                    this.updateAuthUI();
+                    this.initAuthModal();
+                    return;
+                }
+                throw new Error('Failed to fetch profile');
+            }
 
             const data = await response.json();
-            
+
             // Populate modal
             pixelCountEl.textContent = data.pixelCount.toLocaleString();
             nameInput.value = data.name;
@@ -315,7 +325,6 @@ class PixelCanvas {
         } catch (error) {
             console.error('Dashboard error:', error);
             modal.style.display = 'none';
-            alert('Could not load dashboard. Please try logging in again.');
         }
     }
 
