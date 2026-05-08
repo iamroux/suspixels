@@ -26,10 +26,6 @@ class PixelCanvas {
         this.pixelMetadata = new Map();
         this.recentColors = JSON.parse(localStorage.getItem('recentColors') || JSON.stringify(['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF']));
 
-        // Viewport chunk loading (fix 14)
-        this.CHUNK_SIZE = 500; // 6×6 = 36 chunks across the 3000×3000 grid
-        this.loadedChunks = new Set();
-
         // Edit mode settings
         this.isEditMode = false;
         this.isContinuousDraw = false;
@@ -914,8 +910,6 @@ class PixelCanvas {
     endPan() {
         this.isPanning = false;
         this.container.classList.remove('panning');
-        // Load any chunks revealed by the pan
-        this.loadVisibleChunks();
     }
 
     zoomAt(x, y, scale) {
@@ -948,8 +942,6 @@ class PixelCanvas {
 
             document.getElementById('zoom-level').textContent = `${Math.round(this.zoom * 100)}%`;
             this.render();
-            // Load any chunks newly revealed by the zoom
-            this.loadVisibleChunks();
         }
     }
 
@@ -1664,77 +1656,22 @@ class PixelCanvas {
         });
     }
 
-    // Fix 14: load only the chunks visible in the current viewport
     async loadPixels() {
-        this.pixels.clear();
-        this.pixelMetadata.clear();
-        this.loadedChunks.clear();
-        await this.loadVisibleChunks();
-    }
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/api/pixels`);
+            const pixels = await response.json();
 
-    getVisibleGridRect() {
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-        const canvasPixelW = this.gridSize * this.pixelSize * this.zoom;
-        const canvasPixelH = this.gridSize * this.pixelSize * this.zoom;
-        const originX = (w - canvasPixelW) / 2 + this.viewportX;
-        const originY = (h - canvasPixelH) / 2 + this.viewportY;
-        const gridX = Math.floor(-originX / this.zoom);
-        const gridY = Math.floor(-originY / this.zoom);
-        const gridW = Math.ceil(w / this.zoom);
-        const gridH = Math.ceil(h / this.zoom);
-        return {
-            x: Math.max(0, gridX),
-            y: Math.max(0, gridY),
-            x2: Math.min(this.gridSize, gridX + gridW),
-            y2: Math.min(this.gridSize, gridY + gridH),
-        };
-    }
+            this.pixels.clear();
+            this.pixelMetadata.clear();
 
-    async loadVisibleChunks() {
-        const { x, y, x2, y2 } = this.getVisibleGridRect();
-        const maxChunks = Math.ceil(this.gridSize / this.CHUNK_SIZE);
+            pixels.forEach(pixel => {
+                this.pixels.set(`${pixel.x},${pixel.y}`, pixel.color);
+            });
 
-        // 1 chunk of padding so pixels appear before the edge is reached
-        const cx1 = Math.max(0, Math.floor(x / this.CHUNK_SIZE) - 1);
-        const cy1 = Math.max(0, Math.floor(y / this.CHUNK_SIZE) - 1);
-        const cx2 = Math.min(maxChunks - 1, Math.floor((x2 - 1) / this.CHUNK_SIZE) + 1);
-        const cy2 = Math.min(maxChunks - 1, Math.floor((y2 - 1) / this.CHUNK_SIZE) + 1);
-
-        const fetches = [];
-        for (let cx = cx1; cx <= cx2; cx++) {
-            for (let cy = cy1; cy <= cy2; cy++) {
-                const key = `${cx},${cy}`;
-                if (!this.loadedChunks.has(key)) {
-                    this.loadedChunks.add(key);
-                    fetches.push(this.loadChunk(cx, cy));
-                }
-            }
-        }
-
-        if (fetches.length > 0) {
-            await Promise.all(fetches);
             this.render();
             if (this._hideColdStartBanner) this._hideColdStartBanner();
-        }
-    }
-
-    async loadChunk(cx, cy) {
-        const x = cx * this.CHUNK_SIZE;
-        const y = cy * this.CHUNK_SIZE;
-        const w = Math.min(this.CHUNK_SIZE, this.gridSize - x);
-        const h = Math.min(this.CHUNK_SIZE, this.gridSize - y);
-        try {
-            const response = await fetch(
-                `${this.getApiBaseUrl()}/api/pixels?x=${x}&y=${y}&w=${w}&h=${h}`
-            );
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const pixels = await response.json();
-            pixels.forEach(p => this.pixels.set(`${p.x},${p.y}`, p.color));
         } catch (error) {
-            // Remove so it can be retried on next pan/zoom
-            this.loadedChunks.delete(`${cx},${cy}`);
-            console.error(`Failed to load chunk (${cx},${cy}):`, error);
+            console.error('Failed to load pixels:', error);
         }
     }
 }

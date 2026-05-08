@@ -5,7 +5,6 @@ import { Pixel } from './entities/pixel.entity';
 import { CreatePixelDto } from './dto/create-pixel.dto';
 import { PixelResponseDto } from './dto/pixel-response.dto';
 import { DeletePixelDto } from './dto/delete-pixel.dto';
-import { GetPixelsQueryDto } from './dto/get-pixels-query.dto';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../redis/redis.constants';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -62,30 +61,11 @@ export class PixelsService {
     }
   }
 
-  // Fix 14: optional viewport filtering — only send pixels in view
-  async getAllPixels(query?: GetPixelsQueryDto): Promise<PixelResponseDto[]> {
-    const hasViewport =
-      query?.x !== undefined &&
-      query?.y !== undefined &&
-      query?.w !== undefined &&
-      query?.h !== undefined;
-
+  async getAllPixels(): Promise<PixelResponseDto[]> {
     try {
       const cachedPixels = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
       if (Object.keys(cachedPixels).length > 0) {
-        const entries = Object.entries(cachedPixels);
-        const filtered = hasViewport
-          ? entries.filter(([key]) => {
-              const [px, py] = key.split(',').map(Number);
-              return (
-                px >= query.x! &&
-                px < query.x! + query.w! &&
-                py >= query.y! &&
-                py < query.y! + query.h!
-              );
-            })
-          : entries;
-        return filtered.map(([key, color]) => {
+        return Object.entries(cachedPixels).map(([key, color]) => {
           const [x, y] = key.split(',').map(Number);
           return { x, y, color };
         });
@@ -94,24 +74,7 @@ export class PixelsService {
       this.logger.warn('Redis unavailable, falling back to database', error);
     }
 
-    // Viewport query: go straight to DB with a range WHERE clause
-    if (hasViewport) {
-      const pixels = await this.pixelRepository
-        .createQueryBuilder('pixel')
-        .where(
-          'pixel.x >= :x AND pixel.x < :x2 AND pixel.y >= :y AND pixel.y < :y2',
-          {
-            x: query!.x,
-            x2: query!.x! + query!.w!,
-            y: query!.y,
-            y2: query!.y! + query!.h!,
-          },
-        )
-        .getMany();
-      return pixels.map(this.toResponseDto);
-    }
-
-    // Full load: coalesce concurrent misses into one DB query
+    // Coalesce concurrent misses into one DB query
     if (this.dbLoadPromise) return this.dbLoadPromise;
     this.dbLoadPromise = this.loadPixelsFromDb().finally(() => {
       this.dbLoadPromise = null;
