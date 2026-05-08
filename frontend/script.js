@@ -260,7 +260,7 @@ class PixelCanvas {
             try {
                 const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                     credentials: 'include',
                     body: JSON.stringify(updateData)
                 });
@@ -311,6 +311,7 @@ class PixelCanvas {
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
                 credentials: 'include',
+                headers: this.getAuthHeaders(),
             });
 
             if (!response.ok) {
@@ -388,19 +389,24 @@ class PixelCanvas {
     }
 
     handleAuthSuccess(data) {
-        // Token is set as httpOnly cookie by the server — not stored in JS
         this.user = data.user;
         this.userName = data.user.name;
 
         localStorage.setItem('pixelUser', JSON.stringify(this.user));
         localStorage.removeItem('pixelUserName');
+        // Store token as Bearer fallback for browsers that block cross-site cookies (e.g. Safari ITP)
+        if (data.access_token) localStorage.setItem('authToken', data.access_token);
 
         document.getElementById('auth-modal').style.display = 'none';
         this.updateAuthUI();
 
-        // Reconnect WebSocket — server reads auth from cookie on upgrade request
         if (this.ws) this.ws.close();
         this.connectWebSocket();
+    }
+
+    getAuthHeaders() {
+        const token = localStorage.getItem('authToken');
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
     }
 
     async logout() {
@@ -408,6 +414,7 @@ class PixelCanvas {
             await fetch(`${this.getApiBaseUrl()}/auth/logout`, {
                 method: 'POST',
                 credentials: 'include',
+                headers: this.getAuthHeaders(),
             });
         } catch (e) {
             console.warn('Logout request failed', e);
@@ -416,6 +423,7 @@ class PixelCanvas {
         this.userName = '';
         localStorage.removeItem('pixelUser');
         localStorage.removeItem('pixelUserName');
+        localStorage.removeItem('authToken');
 
         this.updateAuthUI();
         if (this.ws) this.ws.close();
@@ -1175,46 +1183,47 @@ class PixelCanvas {
         applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Applying...</span>';
 
         try {
-            // Build batch operations array
             const operations = [];
             for (const [pixelKey, change] of this.pendingChanges) {
                 if (change.action === 'set') {
                     operations.push({
                         action: 'set',
-                        data: {
-                            x: change.x,
-                            y: change.y,
-                            color: change.color,
-                            insertedBy: this.userName
-                        }
+                        data: { x: change.x, y: change.y, color: change.color }
                     });
                 } else if (change.action === 'delete') {
                     const [x, y] = pixelKey.split(',').map(Number);
-                    operations.push({
-                        action: 'delete',
-                        data: { x, y }
-                    });
+                    operations.push({ action: 'delete', data: { x, y } });
                 }
             }
 
-            console.log(`🚀 Batch applying ${operations.length} changes in ONE request`);
-
-            // Send single batch request
             const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/batch`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                 credentials: 'include',
                 body: JSON.stringify({ operations })
             });
 
             if (!response.ok) {
-                throw new Error('Batch operation failed');
+                const status = response.status;
+                let body = '';
+                try { body = await response.text(); } catch {}
+                console.error(`Batch failed ${status}:`, body);
+
+                if (status === 401) {
+                    this.user = null;
+                    localStorage.removeItem('pixelUser');
+                    applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span>';
+                    applyBtn.disabled = false;
+                    this.updateAuthUI();
+                    this.initAuthModal();
+                    return;
+                }
+                throw new Error(`Batch failed (${status}): ${body}`);
             }
 
             const result = await response.json();
-            console.log(`✅ Batch complete: ${result.success} successful, ${result.failed} failed`);
+            console.log(`Batch complete: ${result.success} ok, ${result.failed} failed`);
 
-            // Clear pending changes
             this.pendingChanges.clear();
             this.originalPixels.clear();
             this.updatePendingChangesCount();
@@ -1225,7 +1234,6 @@ class PixelCanvas {
             }, 2000);
         } catch (error) {
             console.error('Failed to apply changes:', error);
-            alert('Failed to apply some changes. Please try again.');
             applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span>';
             applyBtn.disabled = false;
         }

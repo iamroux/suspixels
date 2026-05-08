@@ -42,7 +42,7 @@ export class AuthController {
   ) {
     const result = await this.authService.register(registerDto);
     res.cookie(COOKIE_NAME, result.access_token, setCookieOptions(this.isProduction));
-    return { user: result.user };
+    return { user: result.user, access_token: result.access_token };
   }
 
   @Post('login')
@@ -58,7 +58,7 @@ export class AuthController {
     }
     const result = await this.authService.login(user);
     res.cookie(COOKIE_NAME, result.access_token, setCookieOptions(this.isProduction));
-    return { user: result.user };
+    return { user: result.user, access_token: result.access_token };
   }
 
   @Post('logout')
