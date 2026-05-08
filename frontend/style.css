@@ -562,7 +562,8 @@ body {
     box-shadow: var(--shadow-xl);
     width: 90%;
     max-width: 28rem;
-    overflow: hidden;
+    max-height: 88vh;
+    overflow-y: auto;
     animation: modalFadeIn var(--transition-slow) ease;
 }
 
@@ -1148,7 +1149,8 @@ body {
     box-shadow: var(--shadow-xl);
     width: 90%;
     max-width: 600px;
-    overflow: hidden;
+    max-height: 88vh;
+    overflow-y: auto;
     animation: modalFadeIn var(--transition-slow) ease;
 }
 
@@ -1786,6 +1788,11 @@ body {
 @media (max-width: 480px) {
     .dashboard-modal-content {
         width: 95% !important;
+    }
+
+    .modal-content {
+        margin: 4vh auto;
+        max-height: 92vh;
     }
 }
 
