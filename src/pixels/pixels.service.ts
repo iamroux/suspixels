@@ -7,7 +7,7 @@ import { PixelResponseDto } from './dto/pixel-response.dto';
 import { DeletePixelDto } from './dto/delete-pixel.dto';
 import { GetPixelsQueryDto } from './dto/get-pixels-query.dto';
 import Redis from 'ioredis';
-import { REDIS_CLIENT } from '../redis/redis.module';
+import { REDIS_CLIENT } from '../redis/redis.constants';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
