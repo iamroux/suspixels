@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Delete, Body, Logger, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Logger, Param, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PixelsService } from './pixels.service';
 import { CreatePixelDto } from './dto/create-pixel.dto';
 import { PixelResponseDto } from './dto/pixel-response.dto';
 import { DeletePixelDto } from './dto/delete-pixel.dto';
+import { BatchPixelsDto } from './dto/batch-pixels.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -98,7 +99,7 @@ export class PixelsController {
     description: 'Batch operation completed',
   })
   async batchPixels(
-    @Body() batchData: { operations: Array<{ action: 'set' | 'delete'; data: any }> },
+    @Body() batchData: BatchPixelsDto,
     @Req() req: any,
   ): Promise<{ success: number; failed: number }> {
     const user = req.user;
@@ -114,8 +115,12 @@ export class PixelsController {
     const results = await Promise.allSettled(
       batchData.operations.map(async (op) => {
         if (op.action === 'set') {
+          if (!op.data.color) {
+            throw new BadRequestException('Set operation requires color');
+          }
           return await this.pixelsService.setPixel({
             ...op.data,
+            color: op.data.color,
             userName: user.name,
             userId: user.userId,
           });

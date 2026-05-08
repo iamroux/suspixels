@@ -49,12 +49,11 @@ class PixelCanvas {
         // Pixel info hover
         this.pixelInfoTimeout = null;
 
-        // Auth state
-        this.authToken = localStorage.getItem('pixelAuthToken') || '';
+        // Auth state (token lives in httpOnly cookie — never in JS)
         this.user = JSON.parse(localStorage.getItem('pixelUser') || 'null');
         this.userName = this.user ? this.user.name : (localStorage.getItem('pixelUserName') || '');
-        
-        if (!this.authToken && !this.userName) {
+
+        if (!this.user && !this.userName) {
             this.initAuthModal();
         }
 
@@ -252,10 +251,8 @@ class PixelCanvas {
             try {
                 const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
                     method: 'PATCH',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.authToken}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(updateData)
                 });
 
@@ -263,7 +260,7 @@ class PixelCanvas {
                 
                 const updatedUser = await response.json();
                 this.user = updatedUser;
-                localStorage.setItem('pixelUser', JSON.stringify(updatedUser));
+                localStorage.setItem('pixelUser', JSON.stringify(updatedUser)); // non-sensitive user info only
                 this.userName = updatedUser.name;
                 this.updateAuthUI();
                 
@@ -289,7 +286,7 @@ class PixelCanvas {
     }
 
     async openDashboard() {
-        if (!this.authToken) return;
+        if (!this.user) return;
 
         const modal = document.getElementById('dashboard-modal');
         const pixelCountEl = document.getElementById('dash-pixel-count');
@@ -304,7 +301,7 @@ class PixelCanvas {
 
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
-                headers: { 'Authorization': `Bearer ${this.authToken}` }
+                credentials: 'include',
             });
 
             if (!response.ok) throw new Error('Failed to fetch profile');
@@ -329,6 +326,7 @@ class PixelCanvas {
             const response = await fetch(`${this.getApiBaseUrl()}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, password })
             });
 
@@ -353,6 +351,7 @@ class PixelCanvas {
             const response = await fetch(`${this.getApiBaseUrl()}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ name, email, password })
             });
 
@@ -371,31 +370,35 @@ class PixelCanvas {
     }
 
     handleAuthSuccess(data) {
-        this.authToken = data.access_token;
+        // Token is set as httpOnly cookie by the server — not stored in JS
         this.user = data.user;
         this.userName = data.user.name;
 
-        localStorage.setItem('pixelAuthToken', this.authToken);
         localStorage.setItem('pixelUser', JSON.stringify(this.user));
-        localStorage.removeItem('pixelUserName'); // Use auth name instead
+        localStorage.removeItem('pixelUserName');
 
         document.getElementById('auth-modal').style.display = 'none';
         this.updateAuthUI();
-        
-        // Reconnect WebSocket with new token
+
+        // Reconnect WebSocket — server reads auth from cookie on upgrade request
         if (this.ws) this.ws.close();
         this.connectWebSocket();
-        this.sendIdentify();
     }
 
-    logout() {
-        this.authToken = '';
+    async logout() {
+        try {
+            await fetch(`${this.getApiBaseUrl()}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+        } catch (e) {
+            console.warn('Logout request failed', e);
+        }
         this.user = null;
         this.userName = '';
-        localStorage.removeItem('pixelAuthToken');
         localStorage.removeItem('pixelUser');
         localStorage.removeItem('pixelUserName');
-        
+
         this.updateAuthUI();
         if (this.ws) this.ws.close();
         this.connectWebSocket();
@@ -1160,10 +1163,8 @@ class PixelCanvas {
             // Send single batch request
             const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/batch`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.authToken}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ operations })
             });
 
@@ -1549,13 +1550,15 @@ class PixelCanvas {
     }
 
     sendIdentify() {
+        // Authenticated users are identified via httpOnly cookie on WS upgrade.
+        // Only guests need to send an identify message with their chosen name.
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        if (this.user) return; // auth already handled server-side via cookie
         if (!this.userName) return;
         try {
-            this.ws.send(JSON.stringify({ 
-                type: 'identify', 
+            this.ws.send(JSON.stringify({
+                type: 'identify',
                 name: this.userName,
-                token: this.authToken 
             }));
         } catch (e) {
             console.warn('identify send failed', e);

@@ -7,6 +7,7 @@ import {
   SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server, WebSocket } from 'ws';
+import { IncomingMessage } from 'http';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
@@ -18,7 +19,7 @@ export class WebsocketGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly logger = new Logger(WebsocketGateway.name);
-  
+
   constructor(
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
@@ -29,29 +30,51 @@ export class WebsocketGateway
 
   private clients: Map<WebSocket, string> = new Map();
 
-  handleConnection(client: WebSocket) {
+  private parseCookies(cookieHeader: string): Record<string, string> {
+    return Object.fromEntries(
+      cookieHeader
+        .split(';')
+        .map((c) => c.trim().split('='))
+        .filter((parts) => parts.length >= 2)
+        .map(([k, ...v]) => [k.trim(), v.join('=').trim()]),
+    );
+  }
+
+  handleConnection(client: WebSocket, request: IncomingMessage) {
     this.logger.log('New client connected');
-    this.clients.set(client, '');
+
+    // Attempt auth from cookie sent on WS upgrade request
+    let initialName = '';
+    const cookieHeader = request?.headers?.cookie || '';
+    if (cookieHeader) {
+      const cookies = this.parseCookies(cookieHeader);
+      const token = cookies['access_token'];
+      if (token) {
+        try {
+          const payload = this.jwtService.verify(token);
+          initialName = payload.name;
+          this.logger.log(`Authenticated WS client via cookie: ${initialName}`);
+        } catch (e) {
+          this.logger.warn(`Invalid WS cookie token: ${e.message}`);
+        }
+      }
+    }
+
+    this.clients.set(client, initialName);
+
     client.on('message', (raw: Buffer) => {
       try {
         const msg = JSON.parse(raw.toString());
         if (msg?.type === 'identify') {
-          let name = msg.name?.trim().slice(0, 40) || 'Guest';
-          
-          if (msg.token) {
-            try {
-              const payload = this.jwtService.verify(msg.token);
-              name = payload.name;
-              this.logger.log(`Client identified as authenticated user: ${name}`);
-            } catch (e) {
-              this.logger.warn(`Invalid token from client: ${e.message}`);
-              name = `${name} (Guest)`;
-            }
-          } else {
-            name = `${name} (Guest)`;
-            this.logger.log(`Client identified as guest: ${name}`);
+          // If already authenticated via cookie, ignore the identify message
+          if (initialName) {
+            this.broadcastUserCount();
+            return;
           }
 
+          // Guest flow: accept name from client (no token accepted here)
+          const name = `${msg.name?.trim().slice(0, 40) || 'Guest'} (Guest)`;
+          this.logger.log(`Guest identified: ${name}`);
           this.clients.set(client, name);
           this.broadcastUserCount();
         }
@@ -59,6 +82,7 @@ export class WebsocketGateway
         this.logger.error(`Error handling message: ${e.message}`);
       }
     });
+
     this.broadcastUserCount();
   }
 
@@ -69,9 +93,9 @@ export class WebsocketGateway
   }
 
   private broadcastUserCount() {
-    const names = Array.from(new Set(
-      Array.from(this.clients.values()).filter((n) => n && n.length > 0)
-    )).sort((a, b) => a.localeCompare(b));
+    const names = Array.from(
+      new Set(Array.from(this.clients.values()).filter((n) => n && n.length > 0)),
+    ).sort((a, b) => a.localeCompare(b));
     const userCount = names.length || this.clients.size;
     const message = JSON.stringify({
       type: 'user_count',
