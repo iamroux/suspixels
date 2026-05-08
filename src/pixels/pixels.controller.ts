@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Delete, Body, Logger, Param, UseGuards, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Logger, Param, Query, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PixelsService } from './pixels.service';
 import { CreatePixelDto } from './dto/create-pixel.dto';
 import { PixelResponseDto } from './dto/pixel-response.dto';
 import { DeletePixelDto } from './dto/delete-pixel.dto';
 import { BatchPixelsDto } from './dto/batch-pixels.dto';
+import { GetPixelsQueryDto } from './dto/get-pixels-query.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -28,11 +29,11 @@ export class PixelsController {
     description: 'List of pixels',
     type: [PixelResponseDto],
   })
-  async getAllPixels(): Promise<PixelResponseDto[]> {
+  async getAllPixels(@Query() query: GetPixelsQueryDto): Promise<PixelResponseDto[]> {
     if (this.isDevelopment) {
-      this.logger.debug('GET /api/pixels - Fetching all pixels');
+      this.logger.debug('GET /api/pixels - Fetching pixels', query);
     }
-    const pixels = await this.pixelsService.getAllPixels();
+    const pixels = await this.pixelsService.getAllPixels(query);
     if (this.isDevelopment) {
       this.logger.debug(`GET /api/pixels - Returned ${pixels.length} pixels`);
     }
