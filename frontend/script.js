@@ -49,6 +49,9 @@ class PixelCanvas {
         // Pixel info hover
         this.pixelInfoTimeout = null;
 
+        // Brush size (applies to draw and erase)
+        this.brushSize = 1;
+
         // Cursor preview (grid hover)
         this.cursorGridX = -1;
         this.cursorGridY = -1;
@@ -69,6 +72,7 @@ class PixelCanvas {
         this.setupCanvas();
         this.setupEventListeners();
         this.setupColorPicker();
+        this.setupBrushSize();
         this.initUsersPopover();
         this.initDashboardModal();
         this.initColdStartBanner();
@@ -638,6 +642,16 @@ class PixelCanvas {
         });
     }
 
+    setupBrushSize() {
+        document.querySelectorAll('.size-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.brushSize = parseInt(btn.dataset.size);
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+    }
+
     addRecentColor(color) {
         this.recentColors = this.recentColors.filter(c => c !== color);
         this.recentColors.unshift(color);
@@ -1065,51 +1079,44 @@ class PixelCanvas {
     }
 
     async placePixel(x, y) {
-        if (!this.isEditMode) {
-            return; // Can't place pixels in explore mode
-        }
-
+        if (!this.isEditMode) return;
         try {
-            const pixelKey = `${x},${y}`;
-            
-            if (this.isErasing) {
-                // Store original pixel if it exists and not already stored
-                if (!this.originalPixels.has(pixelKey) && this.pixels.has(pixelKey)) {
-                    this.originalPixels.set(pixelKey, {
-                        color: this.pixels.get(pixelKey),
-                        metadata: this.pixelMetadata.get(pixelKey)
-                    });
-                }
-                
-                // Mark for deletion
-                this.pendingChanges.set(pixelKey, { action: 'delete' });
-                this.deletePixelLocally(x, y);
-            } else {
-                // Store original pixel if not already stored
-                if (!this.originalPixels.has(pixelKey)) {
-                    if (this.pixels.has(pixelKey)) {
-                        this.originalPixels.set(pixelKey, {
-                            color: this.pixels.get(pixelKey),
-                            metadata: this.pixelMetadata.get(pixelKey)
-                        });
-                    } else {
-                        this.originalPixels.set(pixelKey, null);
+            const offset = Math.floor((this.brushSize - 1) / 2);
+            for (let dy = 0; dy < this.brushSize; dy++) {
+                for (let dx = 0; dx < this.brushSize; dx++) {
+                    const px = x - offset + dx;
+                    const py = y - offset + dy;
+                    if (this.isValidGridPosition(px, py)) {
+                        this.placeSinglePixel(px, py);
                     }
                 }
-                
-                // Add to pending changes
-                this.pendingChanges.set(pixelKey, {
-                    action: 'set',
-                    color: this.selectedColor,
-                    x,
-                    y
-                });
-                this.updatePixelLocally(x, y, this.selectedColor);
             }
-            
             this.updatePendingChangesCount();
         } catch (error) {
             console.error('Failed to place pixel:', error);
+        }
+    }
+
+    placeSinglePixel(x, y) {
+        const pixelKey = `${x},${y}`;
+        if (this.isErasing) {
+            if (!this.originalPixels.has(pixelKey) && this.pixels.has(pixelKey)) {
+                this.originalPixels.set(pixelKey, {
+                    color: this.pixels.get(pixelKey),
+                    metadata: this.pixelMetadata.get(pixelKey)
+                });
+            }
+            this.pendingChanges.set(pixelKey, { action: 'delete' });
+            this.deletePixelLocally(x, y);
+        } else {
+            if (!this.originalPixels.has(pixelKey)) {
+                this.originalPixels.set(pixelKey, this.pixels.has(pixelKey) ? {
+                    color: this.pixels.get(pixelKey),
+                    metadata: this.pixelMetadata.get(pixelKey)
+                } : null);
+            }
+            this.pendingChanges.set(pixelKey, { action: 'set', color: this.selectedColor, x, y });
+            this.updatePixelLocally(x, y, this.selectedColor);
         }
     }
 
@@ -1553,7 +1560,7 @@ class PixelCanvas {
     drawCursorPreview() {
         if (!this.isEditMode || !this.isValidGridPosition(this.cursorGridX, this.cursorGridY)) return;
 
-        const screenPos = this.gridToScreen(this.cursorGridX, this.cursorGridY);
+        const offset = Math.floor((this.brushSize - 1) / 2);
         const size = this.pixelSize * this.zoom;
 
         this.ctx.save();
@@ -1567,9 +1574,21 @@ class PixelCanvas {
             this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.45)`;
             this.ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.9)`;
         }
-        this.ctx.fillRect(screenPos.x, screenPos.y, size, size);
+
+        for (let dy = 0; dy < this.brushSize; dy++) {
+            for (let dx = 0; dx < this.brushSize; dx++) {
+                const px = this.cursorGridX - offset + dx;
+                const py = this.cursorGridY - offset + dy;
+                if (this.isValidGridPosition(px, py)) {
+                    const sp = this.gridToScreen(px, py);
+                    this.ctx.fillRect(sp.x, sp.y, size, size);
+                }
+            }
+        }
+
+        const topLeft = this.gridToScreen(this.cursorGridX - offset, this.cursorGridY - offset);
         this.ctx.lineWidth = Math.max(1, size * 0.06);
-        this.ctx.strokeRect(screenPos.x, screenPos.y, size, size);
+        this.ctx.strokeRect(topLeft.x, topLeft.y, size * this.brushSize, size * this.brushSize);
         this.ctx.restore();
     }
 

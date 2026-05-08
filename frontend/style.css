@@ -757,6 +757,20 @@ body {
         display: none !important;
     }
 
+    .brush-size-picker {
+        gap: 1px;
+        padding: 2px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+    }
+
+    .size-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        font-size: 0.75rem;
+    }
+
     .color-label {
         display: none;
     }
@@ -1651,6 +1665,44 @@ body {
 .mode-toggle-container:hover .edit-locked-message.visible {
     opacity: 1;
     transform: translateX(-50%) translateY(-5px);
+}
+
+/* Brush Size Picker */
+.brush-size-picker {
+    display: flex;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    align-items: center;
+}
+
+.size-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    line-height: 1;
+}
+
+.size-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.size-btn.active {
+    background: var(--primary-600);
+    color: white;
 }
 
 /* Dashboard Modal Styles */
