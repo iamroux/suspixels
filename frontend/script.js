@@ -1687,16 +1687,13 @@ class PixelCanvas {
     }
 
     sendIdentify() {
-        // Authenticated users are identified via httpOnly cookie on WS upgrade.
-        // Only guests need to send an identify message with their chosen name.
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-        if (this.user) return; // auth already handled server-side via cookie
         if (!this.userName) return;
         try {
-            this.ws.send(JSON.stringify({
-                type: 'identify',
-                name: this.userName,
-            }));
+            const msg = { type: 'identify', name: this.userName };
+            const token = localStorage.getItem('authToken');
+            if (token) msg.token = token;
+            this.ws.send(JSON.stringify(msg));
         } catch (e) {
             console.warn('identify send failed', e);
         }

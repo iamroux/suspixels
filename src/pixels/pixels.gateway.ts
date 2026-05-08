@@ -101,6 +101,18 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       try {
         const msg = JSON.parse(raw.toString());
         if (msg?.type === 'identify') {
+          if (msg.token) {
+            try {
+              const payload = this.jwtService.verify(msg.token);
+              const verified = payload.name || msg.name?.trim().slice(0, 40) || 'User';
+              this.logger.log(`Authenticated WS client via identify token: ${verified}`);
+              this.clients.set(client, verified);
+              this.broadcastUserCount();
+              return;
+            } catch {
+              // token invalid — fall through
+            }
+          }
           if (initialName) { this.broadcastUserCount(); return; }
           const name = `${msg.name?.trim().slice(0, 40) || 'Guest'} (Guest)`;
           this.logger.log(`Guest identified: ${name}`);
