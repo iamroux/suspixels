@@ -26,6 +26,10 @@ class PixelCanvas {
         this.pixelMetadata = new Map();
         this.recentColors = JSON.parse(localStorage.getItem('recentColors') || JSON.stringify(['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF']));
 
+        // Viewport chunk loading (fix 14)
+        this.CHUNK_SIZE = 500; // 6×6 = 36 chunks across the 3000×3000 grid
+        this.loadedChunks = new Set();
+
         // Edit mode settings
         this.isEditMode = false;
         this.isContinuousDraw = false;
@@ -49,12 +53,11 @@ class PixelCanvas {
         // Pixel info hover
         this.pixelInfoTimeout = null;
 
-        // Auth state
-        this.authToken = localStorage.getItem('pixelAuthToken') || '';
+        // Auth state (token lives in httpOnly cookie — never in JS)
         this.user = JSON.parse(localStorage.getItem('pixelUser') || 'null');
         this.userName = this.user ? this.user.name : (localStorage.getItem('pixelUserName') || '');
-        
-        if (!this.authToken && !this.userName) {
+
+        if (!this.user && !this.userName) {
             this.initAuthModal();
         }
 
@@ -252,10 +255,8 @@ class PixelCanvas {
             try {
                 const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
                     method: 'PATCH',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.authToken}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(updateData)
                 });
 
@@ -263,7 +264,7 @@ class PixelCanvas {
                 
                 const updatedUser = await response.json();
                 this.user = updatedUser;
-                localStorage.setItem('pixelUser', JSON.stringify(updatedUser));
+                localStorage.setItem('pixelUser', JSON.stringify(updatedUser)); // non-sensitive user info only
                 this.userName = updatedUser.name;
                 this.updateAuthUI();
                 
@@ -289,7 +290,7 @@ class PixelCanvas {
     }
 
     async openDashboard() {
-        if (!this.authToken) return;
+        if (!this.user) return;
 
         const modal = document.getElementById('dashboard-modal');
         const pixelCountEl = document.getElementById('dash-pixel-count');
@@ -304,7 +305,7 @@ class PixelCanvas {
 
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
-                headers: { 'Authorization': `Bearer ${this.authToken}` }
+                credentials: 'include',
             });
 
             if (!response.ok) throw new Error('Failed to fetch profile');
@@ -329,6 +330,7 @@ class PixelCanvas {
             const response = await fetch(`${this.getApiBaseUrl()}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, password })
             });
 
@@ -353,6 +355,7 @@ class PixelCanvas {
             const response = await fetch(`${this.getApiBaseUrl()}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ name, email, password })
             });
 
@@ -371,31 +374,35 @@ class PixelCanvas {
     }
 
     handleAuthSuccess(data) {
-        this.authToken = data.access_token;
+        // Token is set as httpOnly cookie by the server — not stored in JS
         this.user = data.user;
         this.userName = data.user.name;
 
-        localStorage.setItem('pixelAuthToken', this.authToken);
         localStorage.setItem('pixelUser', JSON.stringify(this.user));
-        localStorage.removeItem('pixelUserName'); // Use auth name instead
+        localStorage.removeItem('pixelUserName');
 
         document.getElementById('auth-modal').style.display = 'none';
         this.updateAuthUI();
-        
-        // Reconnect WebSocket with new token
+
+        // Reconnect WebSocket — server reads auth from cookie on upgrade request
         if (this.ws) this.ws.close();
         this.connectWebSocket();
-        this.sendIdentify();
     }
 
-    logout() {
-        this.authToken = '';
+    async logout() {
+        try {
+            await fetch(`${this.getApiBaseUrl()}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+        } catch (e) {
+            console.warn('Logout request failed', e);
+        }
         this.user = null;
         this.userName = '';
-        localStorage.removeItem('pixelAuthToken');
         localStorage.removeItem('pixelUser');
         localStorage.removeItem('pixelUserName');
-        
+
         this.updateAuthUI();
         if (this.ws) this.ws.close();
         this.connectWebSocket();
@@ -907,6 +914,8 @@ class PixelCanvas {
     endPan() {
         this.isPanning = false;
         this.container.classList.remove('panning');
+        // Load any chunks revealed by the pan
+        this.loadVisibleChunks();
     }
 
     zoomAt(x, y, scale) {
@@ -939,6 +948,8 @@ class PixelCanvas {
 
             document.getElementById('zoom-level').textContent = `${Math.round(this.zoom * 100)}%`;
             this.render();
+            // Load any chunks newly revealed by the zoom
+            this.loadVisibleChunks();
         }
     }
 
@@ -1160,10 +1171,8 @@ class PixelCanvas {
             // Send single batch request
             const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/batch`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.authToken}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ operations })
             });
 
@@ -1515,6 +1524,20 @@ class PixelCanvas {
 
     handleWebSocketMessage(data) {
         switch (data.type) {
+            // Fix 16: backend now batches updates; handle them all at once
+            case 'batch_update':
+                if (data.updates?.length) {
+                    data.updates.forEach(p => this.updatePixel(p.x, p.y, p.color, {
+                        color: p.color,
+                        insertedBy: p.insertedBy,
+                        updatedAt: p.updatedAt,
+                    }));
+                }
+                if (data.deletes?.length) {
+                    data.deletes.forEach(d => this.deletePixel(d.x, d.y));
+                }
+                break;
+            // Keep individual cases for backward compatibility
             case 'pixel_update':
                 this.updatePixel(data.x, data.y, data.color, {
                     color: data.color,
@@ -1549,13 +1572,15 @@ class PixelCanvas {
     }
 
     sendIdentify() {
+        // Authenticated users are identified via httpOnly cookie on WS upgrade.
+        // Only guests need to send an identify message with their chosen name.
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        if (this.user) return; // auth already handled server-side via cookie
         if (!this.userName) return;
         try {
-            this.ws.send(JSON.stringify({ 
-                type: 'identify', 
+            this.ws.send(JSON.stringify({
+                type: 'identify',
                 name: this.userName,
-                token: this.authToken 
             }));
         } catch (e) {
             console.warn('identify send failed', e);
@@ -1639,22 +1664,77 @@ class PixelCanvas {
         });
     }
 
+    // Fix 14: load only the chunks visible in the current viewport
     async loadPixels() {
-        try {
-            const response = await fetch(`${this.getApiBaseUrl()}/api/pixels`);
-            const pixels = await response.json();
+        this.pixels.clear();
+        this.pixelMetadata.clear();
+        this.loadedChunks.clear();
+        await this.loadVisibleChunks();
+    }
 
-            this.pixels.clear();
-            this.pixelMetadata.clear();
+    getVisibleGridRect() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const canvasPixelW = this.gridSize * this.pixelSize * this.zoom;
+        const canvasPixelH = this.gridSize * this.pixelSize * this.zoom;
+        const originX = (w - canvasPixelW) / 2 + this.viewportX;
+        const originY = (h - canvasPixelH) / 2 + this.viewportY;
+        const gridX = Math.floor(-originX / this.zoom);
+        const gridY = Math.floor(-originY / this.zoom);
+        const gridW = Math.ceil(w / this.zoom);
+        const gridH = Math.ceil(h / this.zoom);
+        return {
+            x: Math.max(0, gridX),
+            y: Math.max(0, gridY),
+            x2: Math.min(this.gridSize, gridX + gridW),
+            y2: Math.min(this.gridSize, gridY + gridH),
+        };
+    }
 
-            pixels.forEach(pixel => {
-                this.pixels.set(`${pixel.x},${pixel.y}`, pixel.color);
-            });
+    async loadVisibleChunks() {
+        const { x, y, x2, y2 } = this.getVisibleGridRect();
+        const maxChunks = Math.ceil(this.gridSize / this.CHUNK_SIZE);
 
+        // 1 chunk of padding so pixels appear before the edge is reached
+        const cx1 = Math.max(0, Math.floor(x / this.CHUNK_SIZE) - 1);
+        const cy1 = Math.max(0, Math.floor(y / this.CHUNK_SIZE) - 1);
+        const cx2 = Math.min(maxChunks - 1, Math.floor((x2 - 1) / this.CHUNK_SIZE) + 1);
+        const cy2 = Math.min(maxChunks - 1, Math.floor((y2 - 1) / this.CHUNK_SIZE) + 1);
+
+        const fetches = [];
+        for (let cx = cx1; cx <= cx2; cx++) {
+            for (let cy = cy1; cy <= cy2; cy++) {
+                const key = `${cx},${cy}`;
+                if (!this.loadedChunks.has(key)) {
+                    this.loadedChunks.add(key);
+                    fetches.push(this.loadChunk(cx, cy));
+                }
+            }
+        }
+
+        if (fetches.length > 0) {
+            await Promise.all(fetches);
             this.render();
             if (this._hideColdStartBanner) this._hideColdStartBanner();
+        }
+    }
+
+    async loadChunk(cx, cy) {
+        const x = cx * this.CHUNK_SIZE;
+        const y = cy * this.CHUNK_SIZE;
+        const w = Math.min(this.CHUNK_SIZE, this.gridSize - x);
+        const h = Math.min(this.CHUNK_SIZE, this.gridSize - y);
+        try {
+            const response = await fetch(
+                `${this.getApiBaseUrl()}/api/pixels?x=${x}&y=${y}&w=${w}&h=${h}`
+            );
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const pixels = await response.json();
+            pixels.forEach(p => this.pixels.set(`${p.x},${p.y}`, p.color));
         } catch (error) {
-            console.error('Failed to load pixels:', error);
+            // Remove so it can be retried on next pan/zoom
+            this.loadedChunks.delete(`${cx},${cy}`);
+            console.error(`Failed to load chunk (${cx},${cy}):`, error);
         }
     }
 }

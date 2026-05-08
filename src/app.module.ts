@@ -8,6 +8,7 @@ import { RedisModule } from './redis/redis.module';
 import appConfig from './config/app.config';
 import redisConfig from './config/redis.config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 
@@ -23,6 +24,7 @@ import { UsersModule } from './users/users.module';
     }),
     RedisModule,
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

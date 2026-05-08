@@ -1,23 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import Redis from 'ioredis';
-import { ConfigService } from '@nestjs/config';
+import { REDIS_CLIENT } from './redis.module';
 
 @Injectable()
 export class RedisService {
   private readonly logger = new Logger(RedisService.name);
-  private readonly redisClient: Redis;
 
-  constructor(private readonly configService: ConfigService) {
-    const redisUrl = this.configService.get<string>('redis.url') || this.configService.get<string>('REDIS_URL');
-    if (redisUrl) {
-      this.redisClient = new Redis(redisUrl);
-    } else {
-      this.redisClient = new Redis({
-        host: this.configService.get<string>('REDIS_HOST'),
-        port: this.configService.get<number>('REDIS_PORT'),
-      });
-    }
-  }
+  constructor(@Inject(REDIS_CLIENT) private readonly redisClient: Redis) {}
 
   async testFunction() {
     const response = await this.redisClient.ping();
@@ -26,13 +15,29 @@ export class RedisService {
   }
 
   async getMetrics() {
-    const bufferKeys = await this.redisClient.keys('pixel_buffer:*');
+    const bufferKeys = await this.scanKeys('pixel_buffer:*');
     const cacheSize = await this.redisClient.hlen('pixel_grid');
-    const lastProcessed = new Date().getTime().toString();
     return {
       pendingPixels: bufferKeys.length,
       cachedPixels: cacheSize,
-      lastProcessed: lastProcessed,
+      lastProcessed: new Date().toISOString(),
     };
+  }
+
+  private async scanKeys(pattern: string): Promise<string[]> {
+    const keys: string[] = [];
+    let cursor = '0';
+    do {
+      const [nextCursor, batch] = await this.redisClient.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
+      cursor = nextCursor;
+      keys.push(...batch);
+    } while (cursor !== '0');
+    return keys;
   }
 }
