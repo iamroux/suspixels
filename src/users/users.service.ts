@@ -54,6 +54,7 @@ export class UsersService {
     
     const countAbove = await queryBuilder
       .select('updated_by')
+      .where('pixel.updatedById IS NOT NULL') // Exclude anonymous pixels
       .groupBy('updated_by')
       .having('COUNT(id) > :count', { count: userPixelCount })
       .getRawMany();
