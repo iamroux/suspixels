@@ -59,6 +59,7 @@ class PixelCanvas {
 
         // Auth state (token lives in httpOnly cookie — never in JS)
         this.user = JSON.parse(localStorage.getItem('pixelUser') || 'null');
+        this.palettes = [];
         this.userName = this.user ? this.user.name : (localStorage.getItem('pixelUserName') || '');
 
         if (!this.user && !this.userName) {
@@ -399,6 +400,7 @@ class PixelCanvas {
 
         document.getElementById('auth-modal').style.display = 'none';
         this.updateAuthUI();
+        this.loadUserPalettes();
 
         if (this.ws) this.ws.close();
         this.connectWebSocket();
@@ -429,6 +431,26 @@ class PixelCanvas {
         if (this.ws) this.ws.close();
         this.connectWebSocket();
         this.initAuthModal();
+        if (this.user) {
+            this.loadUserPalettes();
+        }
+    }
+
+    async loadUserPalettes() {
+        if (!this.user) return;
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/api/palettes`, {
+                credentials: 'include',
+                headers: this.getAuthHeaders(),
+            });
+            if (response.ok) {
+                this.palettes = await response.json();
+                this.renderPalettesPopover();
+                this.renderDashboardPalettes();
+            }
+        } catch (error) {
+            console.error('Failed to load palettes:', error);
+        }
     }
 
     updateAuthUI() {
@@ -596,6 +618,35 @@ class PixelCanvas {
     }
 
     setupColorPicker() {
+        // Palettes button
+        const palettesBtn = document.getElementById('my-palettes-btn');
+        const palettePopover = document.getElementById('palette-popover');
+        
+        palettesBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.user) {
+                const isHidden = palettePopover.style.display === 'none' || palettePopover.style.display === '';
+                if (isHidden) {
+                    const btnRect = palettesBtn.getBoundingClientRect();
+                    palettePopover.style.position = 'fixed';
+                    palettePopover.style.left = `${btnRect.left + btnRect.width / 2}px`;
+                    palettePopover.style.bottom = `${window.innerHeight - btnRect.top + 10}px`;
+                    palettePopover.style.transform = 'translateX(-50%)';
+                    this.loadUserPalettes(); // Refresh when opening
+                }
+                palettePopover.style.display = isHidden ? 'block' : 'none';
+            } else {
+                alert('Login to use palettes!');
+            }
+        });
+
+        // Close popover when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!palettesBtn.contains(e.target) && !palettePopover.contains(e.target)) {
+                palettePopover.style.display = 'none';
+            }
+        });
+
         // Color picker button
         document.getElementById('color-wheel-btn').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1070,7 +1121,9 @@ class PixelCanvas {
             document.getElementById('floating-action-bar').style.display = 'flex';
             
             // Enable tool buttons
-            toolButtons.forEach(btn => btn.removeAttribute('disabled'));
+            toolButtons.forEach(btn => {
+                if (btn.id !== 'my-palettes-btn') btn.removeAttribute('disabled');
+            });
         } else {
             modeBtn.classList.remove('edit-mode');
             modeBtn.classList.add('explore-mode');
@@ -1080,7 +1133,9 @@ class PixelCanvas {
             document.getElementById('floating-action-bar').style.display = 'none';
             
             // Disable tool buttons
-            toolButtons.forEach(btn => btn.setAttribute('disabled', 'true'));
+            toolButtons.forEach(btn => {
+                if (btn.id !== 'my-palettes-btn') btn.setAttribute('disabled', 'true');
+            });
             
             // Clear any pending changes when exiting edit mode
             if (this.pendingChanges.size > 0) {
@@ -1825,6 +1880,230 @@ class PixelCanvas {
                 const spinner = loader.querySelector('.loader-spinner');
                 if (spinner) spinner.style.display = 'none';
             }
+        }
+    }
+
+    // ==========================================
+    // Palette UI Methods
+    // ==========================================
+
+    renderPalettesPopover() {
+        const container = document.getElementById('palette-popover-content');
+        if (!container) return;
+        
+        if (!this.palettes || this.palettes.length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: var(--text-tertiary); padding: 1rem;">No palettes found.<br>Create one in your Profile!</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        this.palettes.forEach(palette => {
+            const item = document.createElement('div');
+            item.className = 'popover-palette-item';
+            
+            const title = document.createElement('div');
+            title.className = 'popover-palette-title';
+            title.textContent = palette.name;
+            item.appendChild(title);
+            
+            const colorsDiv = document.createElement('div');
+            colorsDiv.className = 'palette-card-colors';
+            
+            if (palette.colors && palette.colors.length > 0) {
+                palette.colors.forEach(color => {
+                    const swatch = document.createElement('div');
+                    swatch.className = 'popover-swatch';
+                    swatch.style.backgroundColor = color;
+                    swatch.title = color;
+                    swatch.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.selectedColor = color;
+                        document.getElementById('selected-color').style.backgroundColor = color;
+                        document.getElementById('palette-popover').style.display = 'none';
+                    });
+                    colorsDiv.appendChild(swatch);
+                });
+            } else {
+                colorsDiv.innerHTML = '<span style="color: var(--text-tertiary); font-size: 0.75rem;">Empty palette</span>';
+            }
+            
+            item.appendChild(colorsDiv);
+            container.appendChild(item);
+        });
+    }
+
+    renderDashboardPalettes() {
+        const container = document.getElementById('palettes-list');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        if (!this.palettes || this.palettes.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-tertiary);">You have no palettes yet.</p>';
+        } else {
+            this.palettes.forEach(palette => {
+                const card = document.createElement('div');
+                card.className = 'palette-card';
+                card.innerHTML = `
+                    <div class="palette-card-header">
+                        <div class="palette-card-title">${palette.name}</div>
+                        <button class="secondary-btn small-btn edit-palette-btn"><i class="fas fa-edit"></i></button>
+                    </div>
+                    <div class="palette-card-colors">
+                        ${(palette.colors && palette.colors.length > 0) 
+                            ? palette.colors.map(c => `<div class="palette-color-swatch" style="background-color: ${c}" title="${c}"></div>`).join('') 
+                            : '<span style="color: var(--text-tertiary); font-size: 0.8rem;">No colors assigned</span>'
+                        }
+                    </div>
+                `;
+                card.querySelector('.edit-palette-btn').addEventListener('click', () => this.openPaletteEditor(palette));
+                container.appendChild(card);
+            });
+        }
+        
+        const createBtn = document.getElementById('create-palette-btn');
+        if (createBtn) {
+            createBtn.style.display = (this.palettes && this.palettes.length >= 3) ? 'none' : 'inline-flex';
+            // ensure listener is not duplicated, we can do it here by replacing the node
+            const newBtn = createBtn.cloneNode(true);
+            createBtn.parentNode.replaceChild(newBtn, createBtn);
+            newBtn.addEventListener('click', () => this.openPaletteEditor(null));
+        }
+    }
+
+    openPaletteEditor(palette) {
+        this.currentEditingPalette = palette;
+        const modal = document.getElementById('palette-editor-modal');
+        const nameInput = document.getElementById('palette-name-input');
+        
+        nameInput.value = palette ? palette.name : '';
+        
+        // Populate 10 slots
+        this.currentEditingColors = palette && palette.colors ? [...palette.colors] : [];
+        this.renderPaletteEditorSlots();
+        
+        modal.style.display = 'block';
+        
+        // Setup buttons
+        const saveBtn = document.getElementById('save-palette-btn');
+        const deleteBtn = document.getElementById('delete-palette-btn');
+        const cancelBtn = document.getElementById('cancel-palette-btn');
+        
+        deleteBtn.style.display = palette ? 'block' : 'none';
+        
+        // clone to remove old listeners
+        const newSaveBtn = saveBtn.cloneNode(true);
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        saveBtn.replaceWith(newSaveBtn);
+        deleteBtn.replaceWith(newDeleteBtn);
+        cancelBtn.replaceWith(newCancelBtn);
+        
+        newSaveBtn.addEventListener('click', () => this.savePalette());
+        newDeleteBtn.addEventListener('click', () => this.deletePalette());
+        newCancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+
+    renderPaletteEditorSlots() {
+        const grid = document.getElementById('palette-colors-grid');
+        grid.innerHTML = '';
+        
+        for (let i = 0; i < 10; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'palette-slot';
+            
+            const color = this.currentEditingColors[i];
+            if (color) {
+                slot.classList.add('filled');
+                slot.style.backgroundColor = color;
+            } else {
+                slot.innerHTML = '+';
+            }
+            
+            slot.addEventListener('click', () => {
+                // Open color picker for this slot
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.value = color || '#ff0000';
+                input.addEventListener('input', (e) => {
+                    this.currentEditingColors[i] = e.target.value;
+                    this.renderPaletteEditorSlots();
+                });
+                input.click();
+            });
+            
+            slot.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                if (color) {
+                    this.currentEditingColors.splice(i, 1);
+                    this.renderPaletteEditorSlots();
+                }
+            });
+            
+            grid.appendChild(slot);
+        }
+    }
+
+    async savePalette() {
+        const name = document.getElementById('palette-name-input').value.trim();
+        if (!name) return alert('Please enter a palette name.');
+        
+        const colors = this.currentEditingColors.filter(c => c); // remove empty slots
+        const payload = { name, colors };
+        const btn = document.getElementById('save-palette-btn');
+        this.setLoading(btn, true);
+        
+        try {
+            let url = `${this.getApiBaseUrl()}/api/palettes`;
+            let method = 'POST';
+            
+            if (this.currentEditingPalette) {
+                url += `/${this.currentEditingPalette.id}`;
+                method = 'PATCH';
+            }
+            
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Failed to save palette');
+            }
+            
+            await this.loadUserPalettes();
+            document.getElementById('palette-editor-modal').style.display = 'none';
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            this.setLoading(btn, false);
+        }
+    }
+
+    async deletePalette() {
+        if (!this.currentEditingPalette || !confirm('Are you sure you want to delete this palette?')) return;
+        
+        const btn = document.getElementById('delete-palette-btn');
+        this.setLoading(btn, true);
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/api/palettes/${this.currentEditingPalette.id}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders(),
+                credentials: 'include',
+            });
+            if (!response.ok) throw new Error('Failed to delete palette');
+            
+            await this.loadUserPalettes();
+            document.getElementById('palette-editor-modal').style.display = 'none';
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            this.setLoading(btn, false);
         }
     }
 }

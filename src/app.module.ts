@@ -11,6 +11,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { PalettesModule } from './palettes/palettes.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { UsersModule } from './users/users.module';
     RedisModule,
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
+    PalettesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
