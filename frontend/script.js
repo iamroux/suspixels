@@ -306,7 +306,6 @@ class PixelCanvas {
         pixelCountEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         document.getElementById('dash-rank').innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         document.getElementById('dash-most-used-color').innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
-        document.getElementById('dash-days-joined').innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         nameInput.value = 'Loading...';
         emailInput.value = 'Loading...';
         
@@ -350,10 +349,6 @@ class PixelCanvas {
                 mostUsedColorEl.textContent = 'None';
                 colorPreviewEl.style.backgroundColor = 'transparent';
             }
-
-            // Populate Days Joined
-            const daysJoinedEl = document.getElementById('dash-days-joined');
-            daysJoinedEl.textContent = data.daysJoined || 0;
 
             nameInput.value = data.name;
             emailInput.value = data.email;
@@ -2062,28 +2057,29 @@ class PixelCanvas {
                 slot.innerHTML = '+';
             }
             
-            slot.addEventListener('click', () => {
-                // Open color picker for this slot
-                const input = document.createElement('input');
-                input.type = 'color';
-                input.style.opacity = '0';
-                input.style.position = 'fixed';
-                input.style.top = '-100px';
-                document.body.appendChild(input);
-                
-                input.value = color || '#ff0000';
-                input.onchange = (e) => {
-                    this.currentEditingColors[i] = e.target.value;
-                    this.renderPaletteEditorSlots();
-                    document.body.removeChild(input);
-                };
-                
-                input.click();
+            // Create transparent color input that covers the whole slot
+            // This is the most reliable way for mobile (especially iOS Safari)
+            const input = document.createElement('input');
+            input.type = 'color';
+            input.style.position = 'absolute';
+            input.style.top = '0';
+            input.style.left = '0';
+            input.style.width = '100%';
+            input.style.height = '100%';
+            input.style.opacity = '0';
+            input.style.cursor = 'pointer';
+            input.value = color || '#ff0000';
+            
+            input.addEventListener('change', (e) => {
+                this.currentEditingColors[i] = e.target.value;
+                this.renderPaletteEditorSlots();
             });
             
-            // Long press for mobile to remove color
+            slot.appendChild(input);
+            
+            // Long press for mobile to remove color (attach to input since it's on top)
             let pressTimer;
-            slot.addEventListener('touchstart', () => {
+            input.addEventListener('touchstart', (e) => {
                 pressTimer = setTimeout(() => {
                     if (color) {
                         if (confirm('Remove this color?')) {
@@ -2093,8 +2089,8 @@ class PixelCanvas {
                     }
                 }, 600);
             });
-            slot.addEventListener('touchend', () => clearTimeout(pressTimer));
-            slot.addEventListener('touchmove', () => clearTimeout(pressTimer));
+            input.addEventListener('touchend', () => clearTimeout(pressTimer));
+            input.addEventListener('touchmove', () => clearTimeout(pressTimer));
             
             slot.addEventListener('contextmenu', (e) => {
                 e.preventDefault();

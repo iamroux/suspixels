@@ -1769,6 +1769,7 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     background-color: var(--bg-primary);
     z-index: 2000;
     overflow-y: auto;
@@ -2163,6 +2164,7 @@ body {
 .palette-slot {
     width: 100%;
     aspect-ratio: 1;
+    position: relative;
     border-radius: var(--radius-md);
     border: 2px dashed var(--border-medium);
     display: flex;
