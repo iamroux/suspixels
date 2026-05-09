@@ -197,39 +197,43 @@
         </div>
     </div>
 
-    <!-- Dashboard Modal -->
-    <div id="dashboard-modal" class="modal">
-        <div class="modal-content dashboard-modal-content">
-            <div class="modal-header">
-                <button class="modal-close" id="dashboard-modal-close"><i class="fas fa-times"></i></button>
-                <h2>Your Profile</h2>
-                <p>Track your contributions and manage account</p>
+    <!-- Full Profile Page -->
+    <div id="profile-page" class="profile-page-container">
+        <div class="profile-page-header">
+            <button class="back-to-canvas-btn" id="close-profile-btn">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Canvas</span>
+            </button>
+            <h2>Your Profile</h2>
+            <div style="width: 100px;"></div> <!-- Spacer for flex alignment -->
+        </div>
+        
+        <div class="profile-page-content">
+            <!-- Stats Section -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <i class="fas fa-paint-brush"></i>
+                    <div class="stat-value" id="dash-pixel-count">0</div>
+                    <div class="stat-label">Pixels Placed</div>
+                </div>
             </div>
-            
-            <div class="modal-body">
-                <!-- Stats Section -->
-                <div class="dashboard-stats">
-                    <div class="stat-card">
-                        <i class="fas fa-paint-brush"></i>
-                        <div class="stat-value" id="dash-pixel-count">0</div>
-                        <div class="stat-label">Pixels Placed</div>
-                    </div>
-                </div>
 
-                <!-- Palettes Section -->
-                <div class="palettes-section">
-                    <div class="palettes-header">
-                        <h3>Your Palettes</h3>
-                        <button type="button" id="create-palette-btn" class="secondary-btn small-btn">
-                            <i class="fas fa-plus"></i> New
-                        </button>
-                    </div>
-                    <div id="palettes-list" class="palettes-list">
-                        <!-- Palettes will be injected here -->
-                    </div>
+            <!-- Palettes Section -->
+            <div class="palettes-section">
+                <div class="palettes-header">
+                    <h3>Your Palettes</h3>
+                    <button type="button" id="create-palette-btn" class="secondary-btn small-btn">
+                        <i class="fas fa-plus"></i> New
+                    </button>
                 </div>
+                <div id="palettes-list" class="palettes-list">
+                    <!-- Palettes will be injected here -->
+                </div>
+            </div>
 
-                <!-- Settings Form -->
+            <!-- Settings Form -->
+            <div class="profile-section-card">
+                <h3>Account Settings</h3>
                 <form id="profile-form" class="auth-form">
                     <div class="input-group">
                         <label for="profile-name">Name</label>
@@ -254,7 +258,8 @@
                 </form>
             </div>
             
-            <div class="modal-footer dashboard-footer">
+            <div class="danger-zone">
+                <h3>Danger Zone</h3>
                 <button class="logout-btn-large" id="dash-logout-btn">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Log Out</span>
@@ -264,7 +269,7 @@
     </div>
 
     <!-- Palette Editor Modal -->
-    <div id="palette-editor-modal" class="modal" style="z-index: 1050;">
+    <div id="palette-editor-modal" class="modal" style="z-index: 2050;">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Edit Palette</h2>

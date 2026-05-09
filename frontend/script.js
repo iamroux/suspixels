@@ -75,7 +75,7 @@ class PixelCanvas {
         this.setupColorPicker();
         this.setupBrushSize();
         this.initUsersPopover();
-        this.initDashboardModal();
+        this.initProfilePage();
         this.initColdStartBanner();
         this.updateAuthUI();
         this.connectWebSocket();
@@ -225,27 +225,25 @@ class PixelCanvas {
         });
     }
 
-    initDashboardModal() {
-        const modal = document.getElementById('dashboard-modal');
-        const closeBtn = document.getElementById('dashboard-modal-close');
+    initProfilePage() {
+        const page = document.getElementById('profile-page');
+        const closeBtn = document.getElementById('close-profile-btn');
         const logoutBtn = document.getElementById('dash-logout-btn');
         const profileForm = document.getElementById('profile-form');
 
-        const closeModal = () => {
-            modal.style.display = 'none';
+        const closePage = () => {
+            page.style.display = 'none';
         };
 
-        closeBtn.addEventListener('click', closeModal);
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
-        });
+        closeBtn.addEventListener('click', closePage);
+        
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
+            if (e.key === 'Escape' && page.style.display === 'flex') closePage();
         });
 
         logoutBtn.addEventListener('click', () => {
             this.logout();
-            closeModal();
+            closePage();
         });
 
         profileForm.addEventListener('submit', async (e) => {
@@ -295,19 +293,22 @@ class PixelCanvas {
         }
     }
 
-    async openDashboard() {
+    async openProfilePage() {
         if (!this.user) return;
 
-        const modal = document.getElementById('dashboard-modal');
+        const page = document.getElementById('profile-page');
         const pixelCountEl = document.getElementById('dash-pixel-count');
         const nameInput = document.getElementById('profile-name');
         const emailInput = document.getElementById('profile-email');
 
-        // Show modal and skeletons
-        modal.style.display = 'block';
+        // Show page and skeletons
+        page.style.display = 'flex';
         pixelCountEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         nameInput.value = 'Loading...';
         emailInput.value = 'Loading...';
+        
+        // Start loading palettes for the profile view
+        this.loadUserPalettes();
 
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
@@ -319,7 +320,7 @@ class PixelCanvas {
                 if (response.status === 401) {
                     this.user = null;
                     localStorage.removeItem('pixelUser');
-                    modal.style.display = 'none';
+                    page.style.display = 'none';
                     this.updateAuthUI();
                     this.initAuthModal();
                     return;
@@ -329,13 +330,13 @@ class PixelCanvas {
 
             const data = await response.json();
 
-            // Populate modal
+            // Populate page
             pixelCountEl.textContent = data.pixelCount.toLocaleString();
             nameInput.value = data.name;
             emailInput.value = data.email;
         } catch (error) {
-            console.error('Dashboard error:', error);
-            modal.style.display = 'none';
+            console.error('Profile error:', error);
+            page.style.display = 'none';
         }
     }
 
@@ -438,6 +439,14 @@ class PixelCanvas {
 
     async loadUserPalettes() {
         if (!this.user) return;
+        
+        const listContainer = document.getElementById('palettes-list');
+        if (listContainer) {
+            listContainer.innerHTML = Array(3).fill(0).map(() => `
+                <div class="skeleton-dark palette-card" style="height: 100px;"></div>
+            `).join('');
+        }
+
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/api/palettes`, {
                 credentials: 'include',
@@ -447,9 +456,14 @@ class PixelCanvas {
                 this.palettes = await response.json();
                 this.renderPalettesPopover();
                 this.renderDashboardPalettes();
+            } else {
+                throw new Error('Response not OK');
             }
         } catch (error) {
             console.error('Failed to load palettes:', error);
+            if (listContainer) {
+                listContainer.innerHTML = '<div style="color: #ef4444; padding: 1rem; text-align: center;">Failed to load palettes</div>';
+            }
         }
     }
 
@@ -463,7 +477,7 @@ class PixelCanvas {
                     <span class="user-name-label">${this.user.name}</span>
                 </div>
             `;
-            document.getElementById('open-profile-btn').addEventListener('click', () => this.openDashboard());
+            document.getElementById('open-profile-btn').addEventListener('click', () => this.openProfilePage());
             
             // Hide "Login to Edit" messages
             const lockedMsg = document.querySelector('.edit-locked-message');

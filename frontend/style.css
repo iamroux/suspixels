@@ -1750,26 +1750,110 @@ body {
     color: white;
 }
 
-/* Dashboard Modal Styles */
-.dashboard-modal-content {
-    max-width: 450px !important;
+/* Full Profile Page Styles */
+.profile-page-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-primary);
+    z-index: 2000;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    animation: modalFadeIn 0.3s ease;
 }
 
-#dashboard-modal .modal-content {
-    max-height: 85vh;
-    overflow-y: auto;
+.profile-page-header {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border-medium);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.profile-page-header h2 {
+    font-size: 1.5rem;
+    margin: 0;
+    text-align: center;
+    flex: 1;
+}
+
+.back-to-canvas-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    width: 140px;
+}
+
+.back-to-canvas-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
+}
+
+.profile-page-content {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.profile-section-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.profile-section-card h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-medium);
+    padding-bottom: 0.75rem;
+}
+
+.danger-zone {
+    background-color: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-top: auto; /* Push to bottom if content is short */
+}
+
+.danger-zone h3 {
+    color: #ef4444;
+    margin-bottom: 1.5rem;
 }
 
 .dashboard-stats {
     display: flex;
     justify-content: center;
-    margin-bottom: 2rem;
 }
 
 .stat-card {
     background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
     color: white;
-    padding: 1.5rem;
+    padding: 2rem;
     border-radius: var(--radius-lg);
     text-align: center;
     width: 100%;
@@ -1777,22 +1861,22 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
 .stat-card i {
-    font-size: 1.5rem;
+    font-size: 2rem;
     opacity: 0.8;
 }
 
 .stat-value {
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 800;
     line-height: 1;
 }
 
 .stat-label {
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 500;
     opacity: 0.9;
     text-transform: uppercase;
@@ -1800,20 +1884,15 @@ body {
 }
 
 .dashboard-actions {
-    margin-top: 1rem;
-}
-
-.dashboard-footer {
-    padding: 0 !important;
-    overflow: hidden;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    margin-top: 1.5rem;
 }
 
 .logout-btn-large {
     width: 100%;
-    padding: 1.25rem;
+    padding: 1rem;
     background-color: var(--bg-tertiary);
-    border: none;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md);
     color: #ef4444;
     font-weight: 600;
     display: flex;
@@ -1821,21 +1900,34 @@ body {
     justify-content: center;
     gap: 0.75rem;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .logout-btn-large:hover {
-    background-color: #fee2e2;
+    background-color: #ef4444;
+    color: white;
 }
 
-@media (max-width: 480px) {
-    .dashboard-modal-content {
-        width: 95% !important;
+@media (max-width: 768px) {
+    .profile-page-header {
+        padding: 1rem;
     }
-
-    .modal-content {
-        margin: 4vh auto;
-        max-height: 92vh;
+    
+    .profile-page-header h2 {
+        font-size: 1.2rem;
+    }
+    
+    .back-to-canvas-btn span {
+        display: none;
+    }
+    
+    .back-to-canvas-btn {
+        width: auto;
+    }
+    
+    .profile-page-content {
+        padding: 1rem;
+        gap: 1.5rem;
     }
 }
 
