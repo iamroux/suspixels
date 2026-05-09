@@ -7,6 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Pixel } from '../../pixels/entities/pixel.entity';
+import { Palette } from '../../palettes/entities/palette.entity';
 import { Exclude } from 'class-transformer';
 
 @Entity('users')
@@ -26,6 +27,9 @@ export class User {
 
   @OneToMany(() => Pixel, (pixel: Pixel) => pixel.updatedBy)
   pixels: Pixel[];
+
+  @OneToMany(() => Palette, (palette: Palette) => palette.user)
+  palettes: Palette[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
