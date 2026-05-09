@@ -304,6 +304,9 @@ class PixelCanvas {
         // Show page and skeletons
         page.style.display = 'flex';
         pixelCountEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
+        document.getElementById('dash-rank').innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
+        document.getElementById('dash-most-used-color').innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
+        document.getElementById('dash-days-joined').innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         nameInput.value = 'Loading...';
         emailInput.value = 'Loading...';
         
@@ -332,6 +335,26 @@ class PixelCanvas {
 
             // Populate page
             pixelCountEl.textContent = data.pixelCount.toLocaleString();
+            
+            // Populate Rank
+            const rankEl = document.getElementById('dash-rank');
+            rankEl.textContent = `#${data.rank || 0}`;
+
+            // Populate Top Color
+            const mostUsedColorEl = document.getElementById('dash-most-used-color');
+            const colorPreviewEl = document.getElementById('dash-color-preview');
+            if (data.mostUsedColor) {
+                mostUsedColorEl.textContent = data.mostUsedColor.color.toUpperCase();
+                colorPreviewEl.style.backgroundColor = data.mostUsedColor.color;
+            } else {
+                mostUsedColorEl.textContent = 'None';
+                colorPreviewEl.style.backgroundColor = 'transparent';
+            }
+
+            // Populate Days Joined
+            const daysJoinedEl = document.getElementById('dash-days-joined');
+            daysJoinedEl.textContent = data.daysJoined || 0;
+
             nameInput.value = data.name;
             emailInput.value = data.email;
         } catch (error) {
@@ -2043,13 +2066,35 @@ class PixelCanvas {
                 // Open color picker for this slot
                 const input = document.createElement('input');
                 input.type = 'color';
+                input.style.opacity = '0';
+                input.style.position = 'fixed';
+                input.style.top = '-100px';
+                document.body.appendChild(input);
+                
                 input.value = color || '#ff0000';
-                input.addEventListener('input', (e) => {
+                input.onchange = (e) => {
                     this.currentEditingColors[i] = e.target.value;
                     this.renderPaletteEditorSlots();
-                });
+                    document.body.removeChild(input);
+                };
+                
                 input.click();
             });
+            
+            // Long press for mobile to remove color
+            let pressTimer;
+            slot.addEventListener('touchstart', () => {
+                pressTimer = setTimeout(() => {
+                    if (color) {
+                        if (confirm('Remove this color?')) {
+                            this.currentEditingColors.splice(i, 1);
+                            this.renderPaletteEditorSlots();
+                        }
+                    }
+                }, 600);
+            });
+            slot.addEventListener('touchend', () => clearTimeout(pressTimer));
+            slot.addEventListener('touchmove', () => clearTimeout(pressTimer));
             
             slot.addEventListener('contextmenu', (e) => {
                 e.preventDefault();

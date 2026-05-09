@@ -17,11 +17,22 @@ export class UsersController {
     }
 
     const pixelCount = await this.usersService.getPixelCount(userId);
+    const rank = await this.usersService.getRank(userId);
+    const mostUsedColor = await this.usersService.getMostUsedColor(userId);
+    
+    // Calculate days joined
+    const now = new Date();
+    const joined = new Date(user.createdAt);
+    const diffTime = Math.abs(now.getTime() - joined.getTime());
+    const daysJoined = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     const { password, ...result } = user;
     return {
       ...result,
       pixelCount,
+      rank,
+      mostUsedColor,
+      daysJoined,
     };
   }
 

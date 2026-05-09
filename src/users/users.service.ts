@@ -48,6 +48,33 @@ export class UsersService {
     return this.pixelRepository.count({ where: { updatedById: userId } });
   }
 
+  async getRank(userId: string): Promise<number> {
+    const userPixelCount = await this.getPixelCount(userId);
+    const queryBuilder = this.pixelRepository.createQueryBuilder('pixel');
+    
+    const countAbove = await queryBuilder
+      .select('updated_by')
+      .groupBy('updated_by')
+      .having('COUNT(id) > :count', { count: userPixelCount })
+      .getRawMany();
+      
+    return countAbove.length + 1;
+  }
+
+  async getMostUsedColor(userId: string): Promise<{ color: string, count: number } | null> {
+    const result = await this.pixelRepository
+      .createQueryBuilder('pixel')
+      .select('pixel.color', 'color')
+      .addSelect('COUNT(pixel.id)', 'count')
+      .where('pixel.updatedById = :userId', { userId })
+      .groupBy('pixel.color')
+      .orderBy('count', 'DESC')
+      .limit(1)
+      .getRawOne();
+      
+    return result ? { color: result.color, count: parseInt(result.count) } : null;
+  }
+
   async update(userId: string, updateData: any): Promise<User> {
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);

@@ -1417,6 +1417,18 @@ body {
         height: 60px;
     }
     
+    #palette-editor-modal .modal-content {
+        width: 95% !important;
+        max-width: 400px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .palette-colors-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+
     #color-hex-input {
         padding: 0.5rem;
         font-size: 16px;
@@ -1808,6 +1820,7 @@ body {
 
 .profile-page-content {
     padding: 2rem;
+    padding-bottom: 8rem; /* Extra space for iOS bottom bar and reachability */
     max-width: 800px;
     margin: 0 auto;
     width: 100%;
@@ -1846,22 +1859,35 @@ body {
 }
 
 .dashboard-stats {
-    display: flex;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
 }
 
 .stat-card {
     background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
     color: white;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: var(--radius-lg);
     text-align: center;
-    width: 100%;
     box-shadow: var(--shadow-md);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-color-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-sm);
 }
 
 .stat-card i {
@@ -1909,6 +1935,19 @@ body {
 }
 
 @media (max-width: 768px) {
+    .dashboard-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+
     .profile-page-header {
         padding: 1rem;
     }
@@ -1990,7 +2029,7 @@ body {
 
 /* Dashboard Skeleton */
 .dash-stat-skeleton {
-    height: 60px;
+    height: 48px;
     width: 120px;
     margin: 0 auto;
 }.startup-loader {
