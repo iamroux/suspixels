@@ -774,16 +774,16 @@ body {
         width: auto;
     }
 
-    .mode-toggle-btn span, .tool-btn span, .action-btn span {
+    .mode-toggle-btn span, .tool-btn span, .toolbar .action-btn span, .floating-action-bar .action-btn span {
         display: none !important;
     }
 
-    .mode-toggle-btn i, .tool-btn i, .action-btn i {
+    .mode-toggle-btn i, .tool-btn i, .toolbar .action-btn i, .floating-action-bar .action-btn i {
         margin: 0;
         font-size: 1.1rem;
     }
 
-    .mode-toggle-btn, .tool-btn, .action-btn {
+    .mode-toggle-btn, .tool-btn, .toolbar .action-btn, .floating-action-bar .action-btn {
         padding: 0 !important;
         width: 38px !important;
         height: 38px !important;
