@@ -627,14 +627,17 @@ class PixelCanvas {
             if (this.user) {
                 const isHidden = palettePopover.style.display === 'none' || palettePopover.style.display === '';
                 if (isHidden) {
+                    palettePopover.style.display = 'block';
                     const btnRect = palettesBtn.getBoundingClientRect();
+                    const popWidth = palettePopover.offsetWidth || 250;
                     palettePopover.style.position = 'fixed';
-                    palettePopover.style.left = `${btnRect.left + btnRect.width / 2}px`;
+                    palettePopover.style.left = `${btnRect.left + btnRect.width / 2 - popWidth / 2}px`;
                     palettePopover.style.bottom = `${window.innerHeight - btnRect.top + 10}px`;
-                    palettePopover.style.transform = 'translateX(-50%)';
+                    palettePopover.style.transform = 'none'; // Prevents CSS animation transform conflict
                     this.loadUserPalettes(); // Refresh when opening
+                } else {
+                    palettePopover.style.display = 'none';
                 }
-                palettePopover.style.display = isHidden ? 'block' : 'none';
             } else {
                 alert('Login to use palettes!');
             }
