@@ -162,7 +162,6 @@ window.PixelCanvas.prototype.setupColorPicker = function() {
                     this.selectedColor = hexInput.value.toUpperCase();
                     document.getElementById('selected-color').style.backgroundColor = this.selectedColor;
                     this.setErasing(false);
-                    this.addRecentColor(this.selectedColor);
                 }
                 modal.style.display = 'none';
                 document.getElementById('confirm-color-btn').removeEventListener('click', confirmHandler);
@@ -217,16 +216,6 @@ window.PixelCanvas.prototype.setErasing = function(state) {
     
 };
 
-window.PixelCanvas.prototype.addRecentColor = function(color) {
-        this.recentColors = this.recentColors.filter(c => c !== color);
-        this.recentColors.unshift(color);
-        if (this.recentColors.length > 10) {
-            this.recentColors = this.recentColors.slice(0, 10);
-        }
-        localStorage.setItem('recentColors', JSON.stringify(this.recentColors));
-    
-};
-
 window.PixelCanvas.prototype.toggleColorPickerMode = function() {
         this.isColorPickerMode = !this.isColorPickerMode;
         const pickerBtn = document.getElementById('color-picker-btn');
@@ -254,7 +243,6 @@ window.PixelCanvas.prototype.handlePixelColorPick = function(x, y) {
             const color = this.pixels.get(pixelKey);
             this.selectedColor = color;
             document.getElementById('selected-color').style.backgroundColor = color;
-            this.addRecentColor(color);
             this.setErasing(false);
 
             const indicator = document.getElementById('color-picker-indicator');

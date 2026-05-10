@@ -35,7 +35,6 @@ class PixelCanvas {
         this.offCtx.imageSmoothingEnabled = false;
         this.offCtx.fillStyle = '#FFFFFF';
         this.offCtx.fillRect(0, 0, 3000, 3000);
-        this.recentColors = JSON.parse(localStorage.getItem('recentColors') || JSON.stringify(['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF']));
 
         // Edit mode settings
         this.isEditMode = false;
