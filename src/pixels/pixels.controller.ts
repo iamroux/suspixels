@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Body, Logger, Param, UseGuards, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Logger, Param, UseGuards, Req, BadRequestException, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PixelsService } from './pixels.service';
 import { CreatePixelDto } from './dto/create-pixel.dto';
@@ -54,6 +55,18 @@ export class PixelsController {
       this.logger.debug(`GET /api/pixels/compact - Returned ${pixels.length} pixels`);
     }
     return pixels;
+  }
+
+  @Get('snapshot')
+  @ApiOperation({ summary: 'Get full canvas as PNG' })
+  async getSnapshot(@Res() res: Response): Promise<void> {
+    const buffer = await this.pixelsService.getSnapshot();
+    res.set({
+      'Content-Type': 'image/png',
+      'Content-Length': String(buffer.length),
+      'Cache-Control': 'public, max-age=60',
+    });
+    res.end(buffer);
   }
 
   @Post()
