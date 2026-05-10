@@ -49,6 +49,10 @@ window.PixelCanvas.prototype.connectWebSocket = function() {
             this.updateConnectionStatus();
             this.sendIdentify();
             if (this._hideColdStartBanner) this._hideColdStartBanner();
+            if (this._wsEverConnected) {
+                this.loadPixels();
+            }
+            this._wsEverConnected = true;
         };
 
         this.ws.onclose = () => {
@@ -158,14 +162,22 @@ window.PixelCanvas.prototype.loadPixels = async function() {
                 this.pixels.set(`${x},${y}`, color);
             });
 
+            // Paint all pixels onto offscreen canvas in one pass
+            this.offCtx.fillStyle = '#FFFFFF';
+            this.offCtx.fillRect(0, 0, this.gridSize, this.gridSize);
+            this.pixels.forEach((color, key) => {
+                const [x, y] = key.split(',').map(Number);
+                this.offCtx.fillStyle = color;
+                this.offCtx.fillRect(x, y, 1, 1);
+            });
+
             this.render();
             if (this._hideColdStartBanner) this._hideColdStartBanner();
-            
-            // Hide startup loader
+
             const loader = document.getElementById('startup-loader');
             if (loader) {
                 loader.classList.add('hidden');
-                setTimeout(() => loader.style.display = 'none', 500); // Remove from DOM flow after fade
+                setTimeout(() => loader.style.display = 'none', 500);
             }
         } catch (error) {
             console.error('Failed to load pixels:', error);
@@ -177,5 +189,5 @@ window.PixelCanvas.prototype.loadPixels = async function() {
                 if (spinner) spinner.style.display = 'none';
             }
         }
-    
+
 };
