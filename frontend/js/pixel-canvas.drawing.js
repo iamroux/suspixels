@@ -126,32 +126,23 @@ window.PixelCanvas.prototype.updatePendingChangesCount = function() {
 window.PixelCanvas.prototype.undoPendingChange = function() {
         if (this.pendingChanges.size === 0) return;
 
-        // Get the last inserted key in the Map
         const keys = Array.from(this.pendingChanges.keys());
         const lastKey = keys[keys.length - 1];
-        
-        // Remove from pending changes
+
         this.pendingChanges.delete(lastKey);
 
-        // Revert visually
         const [x, y] = lastKey.split(',').map(Number);
         const original = this.originalPixels.get(lastKey);
 
         if (original === null) {
-            // Pixel didn't exist before, so delete it locally
             this.deletePixelLocally(x, y);
         } else if (original) {
-            // Restore original pixel
             this.updatePixelLocally(x, y, original.color, original.metadata);
         }
 
-        // We don't need to remove it from originalPixels, because if they edit it again, 
-        // originalPixels already correctly stores what it was originally.
-        // However, to keep memory clean, if they reverted the ONLY change to this pixel,
-        // we could delete it, but leaving it is harmless and safer.
-
         this.updatePendingChangesCount();
-    
+        this.render();
+
 };
 
 window.PixelCanvas.prototype.applyPendingChanges = async function() {
@@ -251,21 +242,22 @@ window.PixelCanvas.prototype.updatePixelLocally = function(x, y, color, metadata
         }
 
         this.renderPixel(x, y, color);
-    
+        this.render();
+
 };
 
 window.PixelCanvas.prototype.deletePixelLocally = function(x, y) {
         this.pixels.delete(`${x},${y}`);
         this.pixelMetadata.delete(`${x},${y}`);
         this.clearPixel(x, y);
-    
+        this.render();
+
 };
 
 window.PixelCanvas.prototype.updatePixel = function(x, y, color, metadata = null) {
-        // Only update from WebSocket if not in edit mode or if not a pending change
         const pixelKey = `${x},${y}`;
         if (this.isEditMode && this.pendingChanges.has(pixelKey)) {
-            return; // Don't override pending changes
+            return;
         }
 
         this.pixels.set(pixelKey, color);
@@ -279,20 +271,21 @@ window.PixelCanvas.prototype.updatePixel = function(x, y, color, metadata = null
         }
 
         this.renderPixel(x, y, color);
-    
+        this.render();
+
 };
 
 window.PixelCanvas.prototype.deletePixel = function(x, y) {
-        // Only update from WebSocket if not in edit mode or if not a pending change
         const pixelKey = `${x},${y}`;
         if (this.isEditMode && this.pendingChanges.has(pixelKey)) {
-            return; // Don't override pending changes
+            return;
         }
 
         this.pixels.delete(pixelKey);
         this.pixelMetadata.delete(pixelKey);
         this.clearPixel(x, y);
-    
+        this.render();
+
 };
 
 window.PixelCanvas.prototype.showPixelInfo = async function(x, y) {
@@ -455,42 +448,47 @@ window.PixelCanvas.prototype.drawGrid = function() {
 
 window.PixelCanvas.prototype.render = function() {
         this.drawGrid();
-        this.pixels.forEach((color, key) => {
-            const [x, y] = key.split(',').map(Number);
-            this.renderPixel(x, y, color);
-        });
+
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const canvasPixelW = this.gridSize * this.pixelSize * this.zoom;
+        const canvasPixelH = this.gridSize * this.pixelSize * this.zoom;
+        const originX = (w - canvasPixelW) / 2 + this.viewportX;
+        const originY = (h - canvasPixelH) / 2 + this.viewportY;
+
+        this.ctx.imageSmoothingEnabled = false;
+        this.ctx.drawImage(
+            this.offscreenCanvas,
+            0, 0, this.gridSize, this.gridSize,
+            originX, originY, canvasPixelW, canvasPixelH,
+        );
+
+        if (this.isEditMode && this.pendingChanges.size > 0) {
+            const size = this.pixelSize * this.zoom;
+            this.ctx.strokeStyle = '#FFD700';
+            this.ctx.lineWidth = Math.max(1, size * 0.1);
+            for (const [key] of this.pendingChanges) {
+                const [x, y] = key.split(',').map(Number);
+                const sp = this.gridToScreen(x, y);
+                this.ctx.strokeRect(sp.x, sp.y, size, size);
+            }
+        }
+
         if (this.isEditMode && this.zoom >= 8) this.drawGridLines();
         this.drawCursorPreview();
-    
+
 };
 
 window.PixelCanvas.prototype.renderPixel = function(gridX, gridY, color) {
-        const screenPos = this.gridToScreen(gridX, gridY);
-        const rawSize = this.pixelSize * this.zoom;
-        const pixelKey = `${gridX},${gridY}`;
+        this.offCtx.fillStyle = color;
+        this.offCtx.fillRect(gridX, gridY, 1, 1);
 
-        const x = this.isEditMode ? screenPos.x : Math.round(screenPos.x);
-        const y = this.isEditMode ? screenPos.y : Math.round(screenPos.y);
-        const size = this.isEditMode ? rawSize : Math.ceil(rawSize);
-
-        // Draw the pixel
-        this.ctx.fillStyle = color;
-        this.ctx.fillRect(x, y, size, size);
-
-        // Add a border for pending changes in edit mode
-        if (this.isEditMode && this.pendingChanges.has(pixelKey)) {
-            this.ctx.strokeStyle = '#FFD700'; // Gold border for pending changes
-            this.ctx.lineWidth = Math.max(1, size * 0.1);
-            this.ctx.strokeRect(screenPos.x, screenPos.y, size, size);
-        }
-    
 };
 
 window.PixelCanvas.prototype.clearPixel = function(gridX, gridY) {
-        const screenPos = this.gridToScreen(gridX, gridY);
-        const size = this.pixelSize * this.zoom;
-        this.ctx.clearRect(screenPos.x, screenPos.y, size, size);
-    
+        this.offCtx.fillStyle = '#FFFFFF';
+        this.offCtx.fillRect(gridX, gridY, 1, 1);
+
 };
 
 window.PixelCanvas.prototype.drawGridLines = function() {
