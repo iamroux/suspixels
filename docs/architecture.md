@@ -37,13 +37,13 @@ Cron (30s)        →  flushes pixel_buffer keys → upserts into PostgreSQL pix
 
 | Key | Type | TTL | Purpose |
 |---|---|---|---|
-| `pixel_grid` | Hash | none | `"x,y" → "#RRGGBB"` — live canvas state, rebuilt from Postgres on startup |
+| `pixel_grid` | Hash | none | `"x,y" → "#RRGGBB"` — live canvas state, rebuilt from Postgres on server start or if empty |
 | `pixel_buffer:{x,y}` | String | 5m | Pending write, flushed to DB every 30s |
 | `leaderboard` | String | 30s | Cached top-10 JSON |
 
 ## Database
 
-Single `pixels` table: `(id, x, y, color, updated_by, updated_at)` with a unique index on `(x, y)`. Writes use `INSERT ... ON CONFLICT (x, y) DO UPDATE`.
+PostgreSQL on Neon. Durable backup for canvas state and user data. Written to async via cron, never on the hot read path.
 
 ## Canvas Constraints
 
