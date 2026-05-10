@@ -56,16 +56,14 @@ export class PixelsService {
   }
 
   private async initializePixelCache() {
-    const exists = await this.redisClient.exists(this.PIXEL_GRID_KEY);
-    if (!exists) {
-      const pixels = await this.pixelRepository.find();
-      const pixelMap: Record<string, string> = {};
-      pixels.forEach((p) => { pixelMap[`${p.x},${p.y}`] = p.color; });
-      if (Object.keys(pixelMap).length > 0) {
-        await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
-      }
-      await this.redisClient.expire(this.PIXEL_GRID_KEY, this.PIXEL_GRID_TTL);
+    const pixels = await this.pixelRepository.find({ select: ['x', 'y', 'color'] });
+    const pixelMap: Record<string, string> = {};
+    pixels.forEach((p) => { pixelMap[`${p.x},${p.y}`] = p.color; });
+    await this.redisClient.del(this.PIXEL_GRID_KEY);
+    if (Object.keys(pixelMap).length > 0) {
+      await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
     }
+    await this.redisClient.expire(this.PIXEL_GRID_KEY, this.PIXEL_GRID_TTL);
   }
 
   async getAllPixels(): Promise<PixelResponseDto[]> {
