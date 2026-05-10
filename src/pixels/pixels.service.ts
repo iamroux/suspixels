@@ -29,7 +29,7 @@ export class PixelsService {
   private readonly LEADERBOARD_KEY = 'leaderboard';
   private readonly BATCH_SIZE = 100;
   private readonly BUFFER_TTL = 300;       // 5 min
-  private readonly PIXEL_GRID_TTL = 3600;  // 1 hour
+  private readonly PIXEL_GRID_TTL = 3600; // unused — pixel_grid has no TTL
   private readonly LEADERBOARD_TTL = 30;   // 30 seconds
   private readonly GRID_SIZE = 3000;
   private readonly SNAPSHOT_TTL_MS = 60_000;
@@ -63,7 +63,6 @@ export class PixelsService {
     if (Object.keys(pixelMap).length > 0) {
       await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
     }
-    await this.redisClient.expire(this.PIXEL_GRID_KEY, this.PIXEL_GRID_TTL);
   }
 
   async getAllPixels(): Promise<PixelResponseDto[]> {
@@ -137,7 +136,6 @@ export class PixelsService {
     );
 
     await this.redisClient.hset(this.PIXEL_GRID_KEY, `${x},${y}`, color);
-    await this.redisClient.expire(this.PIXEL_GRID_KEY, this.PIXEL_GRID_TTL);
 
     const responseDto: PixelResponseDto = { x, y, color, insertedBy: userName, userId, updatedAt: new Date() };
 
@@ -186,7 +184,6 @@ export class PixelsService {
       pixels.forEach((p) => { pixelMap[`${p.x},${p.y}`] = p.color; });
       if (Object.keys(pixelMap).length > 0) {
         await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
-        await this.redisClient.expire(this.PIXEL_GRID_KEY, this.PIXEL_GRID_TTL);
       }
     }
 
@@ -276,7 +273,6 @@ export class PixelsService {
     if (Object.keys(pixelMap).length > 0) {
       await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
     }
-    await this.redisClient.expire(this.PIXEL_GRID_KEY, this.PIXEL_GRID_TTL);
   }
 
   private toCompactPixels(cachedPixels: Record<string, string>): CompactPixel[] {
