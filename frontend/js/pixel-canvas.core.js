@@ -26,6 +26,15 @@ class PixelCanvas {
         this.isColorPickerMode = false;
         this.pixels = new Map();
         this.pixelMetadata = new Map();
+
+        // Offscreen canvas holds pixel state; render() uses drawImage for O(1) repaint
+        this.offscreenCanvas = document.createElement('canvas');
+        this.offscreenCanvas.width = 3000;
+        this.offscreenCanvas.height = 3000;
+        this.offCtx = this.offscreenCanvas.getContext('2d');
+        this.offCtx.imageSmoothingEnabled = false;
+        this.offCtx.fillStyle = '#FFFFFF';
+        this.offCtx.fillRect(0, 0, 3000, 3000);
         this.recentColors = JSON.parse(localStorage.getItem('recentColors') || JSON.stringify(['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF']));
 
         // Edit mode settings
@@ -37,6 +46,7 @@ class PixelCanvas {
         // WebSocket
         this.ws = null;
         this.connected = false;
+        this._wsEverConnected = false;
         this.userCount = 0;
         this.userNames = [];
 
