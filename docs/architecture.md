@@ -37,7 +37,7 @@ Cron (30s)        →  flushes pixel_buffer keys → upserts into PostgreSQL pix
 
 | Key | Type | TTL | Purpose |
 |---|---|---|---|
-| `pixel_grid` | Hash | 1h | `"x,y" → "#RRGGBB"` — live canvas state |
+| `pixel_grid` | Hash | none | `"x,y" → "#RRGGBB"` — live canvas state, rebuilt from Postgres on startup |
 | `pixel_buffer:{x,y}` | String | 5m | Pending write, flushed to DB every 30s |
 | `leaderboard` | String | 30s | Cached top-10 JSON |
 
