@@ -9,6 +9,7 @@ import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../redis/redis.constants';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { PNG } from 'pngjs';
 
 interface PendingPixel {
   x: number;
@@ -30,6 +31,9 @@ export class PixelsService {
   private readonly BUFFER_TTL = 300;       // 5 min
   private readonly PIXEL_GRID_TTL = 3600;  // 1 hour
   private readonly LEADERBOARD_TTL = 30;   // 30 seconds
+  private readonly GRID_SIZE = 3000;
+  private readonly SNAPSHOT_TTL_MS = 60_000;
+  private snapshotCache: { buffer: Buffer; builtAt: number } | null = null;
 
   // Prevent cache stampede on concurrent DB fallback
   private dbLoadPromise: Promise<PixelResponseDto[]> | null = null;
@@ -124,6 +128,7 @@ export class PixelsService {
   async setPixel(
     createPixelDto: CreatePixelDto & { userId?: string; userName?: string },
   ): Promise<PixelResponseDto> {
+    this.snapshotCache = null;
     const { x, y, color, userId, userName } = createPixelDto;
 
     const pendingPixel: PendingPixel = { x, y, color, updatedById: userId, timestamp: Date.now() };
@@ -150,6 +155,7 @@ export class PixelsService {
   }
 
   async deletePixel(deletePixelDto: DeletePixelDto): Promise<{ x: number; y: number }> {
+    this.snapshotCache = null;
     const { x, y } = deletePixelDto;
 
     await this.redisClient.del(`${this.PIXEL_BUFFER_KEY}:${x},${y}`);
@@ -166,6 +172,42 @@ export class PixelsService {
     this.eventEmitter.emit('pixel.deleted', { x, y });
 
     return { x, y };
+  }
+
+  async getSnapshot(): Promise<Buffer> {
+    const now = Date.now();
+    if (this.snapshotCache && now - this.snapshotCache.builtAt < this.SNAPSHOT_TTL_MS) {
+      return this.snapshotCache.buffer;
+    }
+
+    const pixelMap = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
+
+    const png = new PNG({ width: this.GRID_SIZE, height: this.GRID_SIZE, filterType: 0, deflateLevel: 1 });
+    png.data.fill(255); // white + fully opaque
+
+    for (const [key, hex] of Object.entries(pixelMap)) {
+      const [x, y] = key.split(',').map(Number);
+      if (x < 0 || x >= this.GRID_SIZE || y < 0 || y >= this.GRID_SIZE) continue;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      const idx = (y * this.GRID_SIZE + x) * 4;
+      png.data[idx] = r;
+      png.data[idx + 1] = g;
+      png.data[idx + 2] = b;
+      // alpha already 255 from fill
+    }
+
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      png.pack()
+        .on('data', (chunk: Buffer) => chunks.push(chunk))
+        .on('end', () => resolve(Buffer.concat(chunks)))
+        .on('error', reject);
+    });
+
+    this.snapshotCache = { buffer, builtAt: now };
+    return buffer;
   }
 
   @Cron(CronExpression.EVERY_30_SECONDS)
