@@ -141,46 +141,16 @@ window.PixelCanvas.prototype.sendIdentify = function() {
 };
 
 window.PixelCanvas.prototype.loadPixels = async function() {
-        try {
-            let response = await fetch(`${this.getApiBaseUrl()}/api/pixels/compact`);
-            let pixels;
-            let isCompactPayload = true;
-
-            if (response.ok) {
-                pixels = await response.json();
-            } else {
-                response = await fetch(`${this.getApiBaseUrl()}/api/pixels`);
-                pixels = await response.json();
-                isCompactPayload = false;
-            }
-
-            this.pixels.clear();
-            this.pixelMetadata.clear();
-
-            pixels.forEach(pixel => {
-                const [x, y, color] = isCompactPayload ? pixel : [pixel.x, pixel.y, pixel.color];
-                this.pixels.set(`${x},${y}`, color);
-            });
-
-            // Paint all pixels onto offscreen canvas in one pass
-            this.offCtx.fillStyle = '#FFFFFF';
-            this.offCtx.fillRect(0, 0, this.gridSize, this.gridSize);
-            this.pixels.forEach((color, key) => {
-                const [x, y] = key.split(',').map(Number);
-                this.offCtx.fillStyle = color;
-                this.offCtx.fillRect(x, y, 1, 1);
-            });
-
-            this.render();
+        const hideLoader = () => {
             if (this._hideColdStartBanner) this._hideColdStartBanner();
-
             const loader = document.getElementById('startup-loader');
             if (loader) {
                 loader.classList.add('hidden');
                 setTimeout(() => loader.style.display = 'none', 500);
             }
-        } catch (error) {
-            console.error('Failed to load pixels:', error);
+        };
+
+        const showError = () => {
             const loader = document.getElementById('startup-loader');
             if (loader) {
                 const text = loader.querySelector('.loader-text');
@@ -188,6 +158,65 @@ window.PixelCanvas.prototype.loadPixels = async function() {
                 const spinner = loader.querySelector('.loader-spinner');
                 if (spinner) spinner.style.display = 'none';
             }
+        };
+
+        // PNG fires in background — renders as soon as it loads (typically before JSON)
+        let pngRendered = false;
+        fetch(`${this.getApiBaseUrl()}/api/pixels/snapshot`)
+            .then(r => r.ok ? r.blob() : Promise.reject())
+            .then(blob => new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(blob);
+                const img = new Image();
+                img.onload = () => {
+                    this.offCtx.fillStyle = '#FFFFFF';
+                    this.offCtx.fillRect(0, 0, this.gridSize, this.gridSize);
+                    this.offCtx.drawImage(img, 0, 0);
+                    URL.revokeObjectURL(url);
+                    pngRendered = true;
+                    this.render();
+                    hideLoader();
+                    resolve();
+                };
+                img.onerror = reject;
+                img.src = url;
+            }))
+            .catch(() => {}); // PNG failure is non-fatal — JSON fallback below
+
+        // Await compact JSON to populate interaction Map (click-to-inspect, pending changes)
+        try {
+            let response = await fetch(`${this.getApiBaseUrl()}/api/pixels/compact`);
+            let pixels;
+            let isCompact = true;
+            if (response.ok) {
+                pixels = await response.json();
+            } else {
+                response = await fetch(`${this.getApiBaseUrl()}/api/pixels`);
+                pixels = await response.json();
+                isCompact = false;
+            }
+            this.pixels.clear();
+            this.pixelMetadata.clear();
+            pixels.forEach(pixel => {
+                const [x, y, color] = isCompact ? pixel : [pixel.x, pixel.y, pixel.color];
+                this.pixels.set(`${x},${y}`, color);
+            });
+        } catch (e) {
+            console.warn('Failed to populate pixel map — interaction degraded');
+            showError();
+            return;
+        }
+
+        // Fallback render from Map if PNG hasn't loaded yet
+        if (!pngRendered) {
+            this.offCtx.fillStyle = '#FFFFFF';
+            this.offCtx.fillRect(0, 0, this.gridSize, this.gridSize);
+            this.pixels.forEach((color, key) => {
+                const [x, y] = key.split(',').map(Number);
+                this.offCtx.fillStyle = color;
+                this.offCtx.fillRect(x, y, 1, 1);
+            });
+            this.render();
+            hideLoader();
         }
 
 };
