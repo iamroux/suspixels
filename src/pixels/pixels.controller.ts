@@ -39,6 +39,23 @@ export class PixelsController {
     return pixels;
   }
 
+  @Get('compact')
+  @ApiOperation({ summary: 'Get all pixels in compact tuple format' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of pixels as [x, y, color] tuples',
+  })
+  async getAllPixelsCompact(): Promise<[number, number, string][]> {
+    if (this.isDevelopment) {
+      this.logger.debug('GET /api/pixels/compact - Fetching compact pixels');
+    }
+    const pixels = await this.pixelsService.getAllPixelsCompact();
+    if (this.isDevelopment) {
+      this.logger.debug(`GET /api/pixels/compact - Returned ${pixels.length} pixels`);
+    }
+    return pixels;
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Place or update a pixel' })

@@ -17,7 +17,7 @@ export const AppDataSource = new DataSource({
   keepConnectionAlive: true,
   logging: process.env.DATABASE_LOGGING === 'true',
   autoLoadEntities: true,
-  poolSize: Number(process.env.DATABASE_POOL_SIZE),
+  poolSize: Number(process.env.DATABASE_POOL_SIZE) || 3,
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
 
@@ -27,7 +27,7 @@ export const AppDataSource = new DataSource({
     subscribersDir: 'subscriber',
   },
   extra: {
-    max: Number(process.env.DATABASE_MAX_CONNECTIONS) || 100,
+    max: Number(process.env.DATABASE_MAX_CONNECTIONS) || 3,
     ssl:
       process.env.DATABASE_SSL_ENABLED === 'true'
         ? {

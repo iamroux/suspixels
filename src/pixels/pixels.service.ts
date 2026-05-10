@@ -18,6 +18,8 @@ interface PendingPixel {
   timestamp: number;
 }
 
+export type CompactPixel = [number, number, string];
+
 @Injectable()
 export class PixelsService {
   private readonly logger = new Logger(PixelsService.name);
@@ -31,6 +33,7 @@ export class PixelsService {
 
   // Prevent cache stampede on concurrent DB fallback
   private dbLoadPromise: Promise<PixelResponseDto[]> | null = null;
+  private compactDbLoadPromise: Promise<CompactPixel[]> | null = null;
 
   // Prevent overlapping cron runs
   private isProcessingPixels = false;
@@ -80,6 +83,34 @@ export class PixelsService {
       this.dbLoadPromise = null;
     });
     return this.dbLoadPromise;
+  }
+
+  async getAllPixelsCompact(): Promise<CompactPixel[]> {
+    try {
+      const cachedPixels = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
+      if (Object.keys(cachedPixels).length > 0) {
+        return this.toCompactPixels(cachedPixels);
+      }
+    } catch (error) {
+      this.logger.warn('Redis unavailable, falling back to database', error);
+    }
+
+    if (this.compactDbLoadPromise) return this.compactDbLoadPromise;
+    this.compactDbLoadPromise = this.loadCompactPixelsFromDb().finally(() => {
+      this.compactDbLoadPromise = null;
+    });
+    return this.compactDbLoadPromise;
+  }
+
+  private async loadCompactPixelsFromDb(): Promise<CompactPixel[]> {
+    const pixels = await this.pixelRepository.find({
+      select: ['x', 'y', 'color'],
+      order: { updatedAt: 'DESC' },
+    });
+    this.updatePixelCache(pixels).catch(() => {
+      this.logger.error('Failed to update pixel cache after compact DB fallback');
+    });
+    return pixels.map((pixel) => [pixel.x, pixel.y, pixel.color] as CompactPixel);
   }
 
   private async loadPixelsFromDb(): Promise<PixelResponseDto[]> {
@@ -196,6 +227,13 @@ export class PixelsService {
       await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
     }
     await this.redisClient.expire(this.PIXEL_GRID_KEY, this.PIXEL_GRID_TTL);
+  }
+
+  private toCompactPixels(cachedPixels: Record<string, string>): CompactPixel[] {
+    return Object.entries(cachedPixels).map(([key, color]) => {
+      const [x, y] = key.split(',').map(Number);
+      return [x, y, color] as CompactPixel;
+    });
   }
 
   // Fix 15: cache leaderboard in Redis to avoid repeated GROUP BY query
