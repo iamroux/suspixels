@@ -180,7 +180,17 @@ export class PixelsService {
       return this.snapshotCache.buffer;
     }
 
-    const pixelMap = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
+    let pixelMap = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
+
+    if (Object.keys(pixelMap).length === 0) {
+      const pixels = await this.pixelRepository.find({ select: ['x', 'y', 'color'] });
+      pixelMap = {};
+      pixels.forEach((p) => { pixelMap[`${p.x},${p.y}`] = p.color; });
+      if (Object.keys(pixelMap).length > 0) {
+        await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
+        await this.redisClient.expire(this.PIXEL_GRID_KEY, this.PIXEL_GRID_TTL);
+      }
+    }
 
     const png = new PNG({ width: this.GRID_SIZE, height: this.GRID_SIZE, filterType: 0, deflateLevel: 1 });
     png.data.fill(255); // white + fully opaque
