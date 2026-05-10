@@ -459,19 +459,23 @@ window.PixelCanvas.prototype.render = function() {
             const [x, y] = key.split(',').map(Number);
             this.renderPixel(x, y, color);
         });
-        if (this.zoom >= 8) this.drawGridLines();
+        if (this.isEditMode && this.zoom >= 8) this.drawGridLines();
         this.drawCursorPreview();
     
 };
 
 window.PixelCanvas.prototype.renderPixel = function(gridX, gridY, color) {
         const screenPos = this.gridToScreen(gridX, gridY);
-        const size = this.pixelSize * this.zoom;
+        const rawSize = this.pixelSize * this.zoom;
         const pixelKey = `${gridX},${gridY}`;
-        
+
+        const x = this.isEditMode ? screenPos.x : Math.round(screenPos.x);
+        const y = this.isEditMode ? screenPos.y : Math.round(screenPos.y);
+        const size = this.isEditMode ? rawSize : Math.ceil(rawSize);
+
         // Draw the pixel
         this.ctx.fillStyle = color;
-        this.ctx.fillRect(screenPos.x, screenPos.y, size, size);
+        this.ctx.fillRect(x, y, size, size);
 
         // Add a border for pending changes in edit mode
         if (this.isEditMode && this.pendingChanges.has(pixelKey)) {
