@@ -68,6 +68,7 @@ window.PixelCanvas.prototype.initAuthModal = function() {
             modal.style.display = 'none';
             this.updateAuthUI();
             this.sendIdentify();
+            if (!localStorage.getItem('sp_tour_seen')) this.startTour();
         });
 
         // Close logic
@@ -94,6 +95,7 @@ window.PixelCanvas.prototype.initAuthModal = function() {
 };
 
 window.PixelCanvas.prototype.initProfilePage = function() {
+        this.initTourReplayBtn();
         const page = document.getElementById('profile-page');
         const closeBtn = document.getElementById('close-profile-btn');
         const logoutBtn = document.getElementById('dash-logout-btn');
@@ -296,6 +298,8 @@ window.PixelCanvas.prototype.handleAuthSuccess = function(data) {
 
         if (this.ws) this.ws.close();
         this.connectWebSocket();
+
+        if (!localStorage.getItem('sp_tour_seen')) this.startTour();
     
 };
 
