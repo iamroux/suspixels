@@ -44,6 +44,10 @@ export class UsersService {
     return this.userRepository.findOne({ where: { id } });
   }
 
+  async findByName(name: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { name } });
+  }
+
   async getPixelCount(userId: string): Promise<number> {
     return this.pixelRepository.count({ where: { updatedById: userId } });
   }

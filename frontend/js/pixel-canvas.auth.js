@@ -91,6 +91,20 @@ window.PixelCanvas.prototype.initAuthModal = function() {
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
         });
+
+        // Initialize Public Profile close behavior
+        const publicProfileModal = document.getElementById('public-profile-modal');
+        const publicProfileCloseBtn = document.getElementById('close-public-profile-btn');
+        const closePublicProfile = () => {
+            publicProfileModal.style.display = 'none';
+        };
+        publicProfileCloseBtn.addEventListener('click', closePublicProfile);
+        window.addEventListener('click', (e) => {
+            if (e.target === publicProfileModal) closePublicProfile();
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && publicProfileModal.style.display === 'flex') closePublicProfile();
+        });
     
 };
 
@@ -229,6 +243,53 @@ window.PixelCanvas.prototype.openProfilePage = async function() {
             page.style.display = 'none';
         }
     
+};
+
+window.PixelCanvas.prototype.openPublicProfilePage = async function(userName) {
+        if (!userName || userName === 'Anonymous') return;
+
+        const modal = document.getElementById('public-profile-modal');
+        const nameEl = document.getElementById('public-profile-name');
+        const pixelCountEl = document.getElementById('public-dash-pixel-count');
+        const rankEl = document.getElementById('public-dash-rank');
+        const mostUsedColorEl = document.getElementById('public-dash-most-used-color');
+        const colorPreviewEl = document.getElementById('public-dash-color-preview');
+
+        // Show modal and skeletons
+        modal.style.display = 'flex';
+        nameEl.textContent = userName;
+        pixelCountEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
+        rankEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
+        mostUsedColorEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
+        
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/users/public/${encodeURIComponent(userName)}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch public profile');
+            }
+
+            const data = await response.json();
+
+            // Populate page
+            nameEl.textContent = data.name;
+            pixelCountEl.textContent = data.pixelCount.toLocaleString();
+            rankEl.textContent = `#${data.rank || 0}`;
+
+            if (data.mostUsedColor) {
+                mostUsedColorEl.textContent = data.mostUsedColor.color.toUpperCase();
+                colorPreviewEl.style.backgroundColor = data.mostUsedColor.color;
+            } else {
+                mostUsedColorEl.textContent = 'None';
+                colorPreviewEl.style.backgroundColor = 'transparent';
+            }
+        } catch (error) {
+            console.error('Public Profile error:', error);
+            pixelCountEl.textContent = 'Error';
+            rankEl.textContent = 'Error';
+            mostUsedColorEl.textContent = 'Error';
+            colorPreviewEl.style.backgroundColor = 'transparent';
+        }
 };
 
 window.PixelCanvas.prototype.login = async function(email, password) {

@@ -370,6 +370,10 @@ window.PixelCanvas.prototype.showPixelInfo = async function(x, y) {
                   })
                 : '—';
 
+            const authorHtml = author !== 'Anonymous' 
+                ? `<span class="pixel-info-author clickable-author" onclick="window.pixelCanvas.openPublicProfilePage('${author.replace(/'/g, "\\'")}')" title="View Profile">${author}</span>`
+                : `<span class="pixel-info-author">${author}</span>`;
+
             pixelInfo.innerHTML = `
                 <div class="pixel-info-header">
                     <div class="pixel-info-swatch" style="background-color: ${color};"></div>
@@ -384,7 +388,7 @@ window.PixelCanvas.prototype.showPixelInfo = async function(x, y) {
                 <div class="pixel-info-body">
                     <div class="pixel-info-row">
                         <span class="pixel-info-label"><i class="fas fa-user"></i> Placed by</span>
-                        <span class="pixel-info-value pixel-info-author">${author}</span>
+                        <span class="pixel-info-value">${authorHtml}</span>
                     </div>
                     <div class="pixel-info-row">
                         <span class="pixel-info-label"><i class="fas fa-clock"></i> When</span>

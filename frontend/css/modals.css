@@ -320,6 +320,19 @@
     font-weight: 600;
 }
 
+.clickable-author {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+    transition: color 0.2s;
+}
+
+.clickable-author:hover {
+    color: #bfdbfe;
+    text-decoration-style: solid;
+}
+
 .pixel-info-time {
     color: #94a3b8;
     font-size: 0.75rem;

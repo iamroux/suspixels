@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Req, Patch, Body, NotFoundException } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Patch, Body, NotFoundException, Param } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 
@@ -32,5 +32,15 @@ export class UsersController {
   @Patch('me')
   async updateProfile(@Req() req: any, @Body() updateData: any) {
     return this.usersService.update(req.user.userId, updateData);
+  }
+
+  @Get('public/:name')
+  async getPublicProfile(@Param('name') name: string) {
+    const user = await this.usersService.findByName(name);
+    if (!user) throw new NotFoundException('User not found');
+    const pixelCount = await this.usersService.getPixelCount(user.id);
+    const rank = await this.usersService.getRank(user.id);
+    const mostUsedColor = await this.usersService.getMostUsedColor(user.id);
+    return { name: user.name, pixelCount, rank, mostUsedColor };
   }
 }
