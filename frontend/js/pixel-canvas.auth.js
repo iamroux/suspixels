@@ -153,10 +153,27 @@ window.PixelCanvas.prototype.initProfilePage = function() {
                 if (!response.ok) throw new Error('Update failed');
                 
                 const updatedUser = await response.json();
+                
+                // Preserve pixelCount because the PATCH endpoint only returns the base entity
+                const currentPixelCount = this.user.pixelCount || 0;
                 this.user = updatedUser;
+                this.user.pixelCount = currentPixelCount;
+                
                 localStorage.setItem('pixelUser', JSON.stringify(updatedUser)); // non-sensitive user info only
                 this.userName = updatedUser.name;
+                
+                // Update header UI
                 this.updateAuthUI();
+                
+                // Instantly update Dashboard Avatar UI
+                const avatarEl = document.getElementById('dash-avatar');
+                if (avatarEl) {
+                    avatarEl.innerHTML = this.getAvatarHtml(this.user.name, this.user.pixelCount, this.user.avatarStyle);
+                }
+                const usernameDisplayEl = document.getElementById('dash-username-display');
+                if (usernameDisplayEl) {
+                    usernameDisplayEl.textContent = this.user.name;
+                }
                 
                 alert('Profile updated successfully!');
                 document.getElementById('profile-password').value = '';
