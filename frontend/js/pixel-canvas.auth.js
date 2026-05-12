@@ -92,20 +92,7 @@ window.PixelCanvas.prototype.initAuthModal = function() {
             if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
         });
 
-        // Initialize Public Profile close behavior
-        const publicProfileModal = document.getElementById('public-profile-modal');
-        const publicProfileCloseBtn = document.getElementById('close-public-profile-btn');
-        const closePublicProfile = () => {
-            publicProfileModal.style.display = 'none';
-        };
-        publicProfileCloseBtn.addEventListener('click', closePublicProfile);
-        window.addEventListener('click', (e) => {
-            if (e.target === publicProfileModal) closePublicProfile();
-        });
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && publicProfileModal.style.display === 'flex') closePublicProfile();
-        });
-    
+
 };
 
 window.PixelCanvas.prototype.initProfilePage = function() {
@@ -123,6 +110,20 @@ window.PixelCanvas.prototype.initProfilePage = function() {
         
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && page.style.display === 'flex') closePage();
+        });
+
+        // Initialize Public Profile close behavior
+        const publicProfileModal = document.getElementById('public-profile-modal');
+        const publicProfileCloseBtn = document.getElementById('close-public-profile-btn');
+        const closePublicProfile = () => {
+            publicProfileModal.style.display = 'none';
+        };
+        publicProfileCloseBtn.addEventListener('click', closePublicProfile);
+        window.addEventListener('click', (e) => {
+            if (e.target === publicProfileModal) closePublicProfile();
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && publicProfileModal.style.display === 'flex') closePublicProfile();
         });
 
         logoutBtn.addEventListener('click', () => {

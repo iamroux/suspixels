@@ -3,11 +3,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
+  @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req: any) {
     const userId = req.user.userId;
     const user = await this.usersService.findById(userId);
@@ -30,6 +30,7 @@ export class UsersController {
   }
 
   @Patch('me')
+  @UseGuards(JwtAuthGuard)
   async updateProfile(@Req() req: any, @Body() updateData: any) {
     return this.usersService.update(req.user.userId, updateData);
   }
