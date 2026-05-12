@@ -294,51 +294,109 @@ window.PixelCanvas.prototype.showPixelInfo = async function(x, y) {
             this.pixelInfoTimeout = null;
         }
 
+        // Tag this request so stale async responses don't stomp newer clicks
+        const requestId = ++this._pixelInfoRequestId;
+
         const pixelKey = `${x},${y}`;
         const pixelInfo = document.getElementById('pixel-info');
 
         // Stop clicks inside the info box from affecting the canvas
-        if (!pixelInfo.onclick) {
-            pixelInfo.onclick = (e) => e.stopPropagation();
-            pixelInfo.onmousedown = (e) => e.stopPropagation();
+        pixelInfo.onclick = (e) => e.stopPropagation();
+        pixelInfo.onmousedown = (e) => e.stopPropagation();
+
+        if (!this.pixels.has(pixelKey)) {
+            this.hidePixelInfo();
+            return;
         }
 
-        if (this.pixels.has(pixelKey)) {
-            let data;
-            if (this.pixelMetadata.has(pixelKey)) {
-                data = this.pixelMetadata.get(pixelKey);
-            } else {
-                try {
-                    const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/info/${x}/${y}`);
-                    if (response.ok) {
-                        data = await response.json();
-                        if (data) {
-                            this.pixelMetadata.set(pixelKey, data);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch pixel info:', error);
-                }
-            }
+        // Grab the pixel's color from the local map immediately
+        const knownColor = this.pixels.get(pixelKey) || '#888';
 
-            if (data) {
-                pixelInfo.innerHTML = `
-                    <div class="pixel-info-header">
-                        <div class="pixel-color" style="background-color: ${data.color};"></div>
-                        <span class="pixel-coords">${x}, ${y}</span>
-                        <button class="pixel-info-close" onclick="event.stopPropagation(); window.pixelCanvas.hidePixelInfo()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="pixel-details">
-                        <div class="pixel-author"><strong>By:</strong> ${data.insertedBy || 'Anonymous'}</div>
-                        <div class="pixel-time"><strong>At:</strong> ${new Date(data.updatedAt).toLocaleString()}</div>
-                    </div>
-                `;
-                pixelInfo.style.display = 'block';
-            }
+        // ── Show skeleton card right away ──
+        pixelInfo.innerHTML = `
+            <div class="pixel-info-header">
+                <div class="pixel-info-swatch" style="background-color: ${knownColor};"></div>
+                <div class="pixel-info-meta">
+                    <span class="pixel-info-coords">${x}, ${y}</span>
+                    <span class="pixel-info-hex">${knownColor.toUpperCase()}</span>
+                </div>
+                <button class="pixel-info-close" onclick="event.stopPropagation(); window.pixelCanvas.hidePixelInfo()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="pixel-info-body">
+                <div class="pixel-info-row">
+                    <span class="pixel-info-label"><i class="fas fa-user"></i> Placed by</span>
+                    <span class="pixel-info-value skeleton-pulse" style="width:80px;height:14px;border-radius:6px;"></span>
+                </div>
+                <div class="pixel-info-row">
+                    <span class="pixel-info-label"><i class="fas fa-clock"></i> When</span>
+                    <span class="pixel-info-value skeleton-pulse" style="width:120px;height:14px;border-radius:6px;"></span>
+                </div>
+            </div>
+        `;
+        pixelInfo.style.display = 'block';
+        pixelInfo.classList.remove('pixel-info-loaded');
+
+        // Close when clicking outside the card
+        this._attachPixelInfoOutsideHandler();
+
+        // ── Fetch real data ──
+        let data;
+        if (this.pixelMetadata.has(pixelKey)) {
+            data = this.pixelMetadata.get(pixelKey);
         } else {
-            this.hidePixelInfo();
+            try {
+                const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/info/${x}/${y}`);
+                if (response.ok) {
+                    data = await response.json();
+                    if (data) this.pixelMetadata.set(pixelKey, data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch pixel info:', error);
+            }
+        }
+
+        // Bail if user clicked a different pixel while we were loading
+        if (requestId !== this._pixelInfoRequestId) return;
+
+        if (data) {
+            const color = data.color || knownColor;
+            const author = data.insertedBy || 'Anonymous';
+            const dateStr = data.updatedAt
+                ? new Date(data.updatedAt).toLocaleString(undefined, {
+                      month: 'short', day: 'numeric',
+                      hour: '2-digit', minute: '2-digit'
+                  })
+                : '—';
+
+            pixelInfo.innerHTML = `
+                <div class="pixel-info-header">
+                    <div class="pixel-info-swatch" style="background-color: ${color};"></div>
+                    <div class="pixel-info-meta">
+                        <span class="pixel-info-coords">${x}, ${y}</span>
+                        <span class="pixel-info-hex">${color.toUpperCase()}</span>
+                    </div>
+                    <button class="pixel-info-close" onclick="event.stopPropagation(); window.pixelCanvas.hidePixelInfo()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="pixel-info-body">
+                    <div class="pixel-info-row">
+                        <span class="pixel-info-label"><i class="fas fa-user"></i> Placed by</span>
+                        <span class="pixel-info-value pixel-info-author">${author}</span>
+                    </div>
+                    <div class="pixel-info-row">
+                        <span class="pixel-info-label"><i class="fas fa-clock"></i> When</span>
+                        <span class="pixel-info-value pixel-info-time">${dateStr}</span>
+                    </div>
+                </div>
+            `;
+            pixelInfo.classList.add('pixel-info-loaded');
+        } else {
+            // Data failed — show a subtle error state instead of blank
+            const body = pixelInfo.querySelector('.pixel-info-body');
+            if (body) body.innerHTML = '<div class="pixel-info-error">Could not load details</div>';
         }
     
 };
@@ -349,28 +407,68 @@ window.PixelCanvas.prototype.hidePixelInfo = function() {
             this.pixelInfoTimeout = null;
         }
 
+        this._removePixelInfoOutsideHandler();
+
         const pixelInfo = document.getElementById('pixel-info');
         pixelInfo.style.display = 'none';
     
 };
 
+window.PixelCanvas.prototype._attachPixelInfoOutsideHandler = function() {
+        // Tear down any existing handler first to avoid duplicates
+        this._removePixelInfoOutsideHandler();
+
+        const pixelInfo = document.getElementById('pixel-info');
+
+        this._pixelInfoOutsideHandler = (e) => {
+            if (pixelInfo.contains(e.target)) return; // click inside card → ignore
+            this.hidePixelInfo();
+        };
+
+        this._pixelInfoEscHandler = (e) => {
+            if (e.key === 'Escape') this.hidePixelInfo();
+        };
+
+        // Use setTimeout so the current click event doesn't immediately fire the handler
+        setTimeout(() => {
+            document.addEventListener('pointerdown', this._pixelInfoOutsideHandler, true);
+            document.addEventListener('keydown',     this._pixelInfoEscHandler,     true);
+        }, 0);
+};
+
+window.PixelCanvas.prototype._removePixelInfoOutsideHandler = function() {
+        if (this._pixelInfoOutsideHandler) {
+            document.removeEventListener('pointerdown', this._pixelInfoOutsideHandler, true);
+            this._pixelInfoOutsideHandler = null;
+        }
+        if (this._pixelInfoEscHandler) {
+            document.removeEventListener('keydown', this._pixelInfoEscHandler, true);
+            this._pixelInfoEscHandler = null;
+        }
+};
+
 window.PixelCanvas.prototype.updatePixelInfoPosition = function(x, y) {
         const pixelInfo = document.getElementById('pixel-info');
-        const rect = pixelInfo.getBoundingClientRect();
-        
-        let posX = x + 10;
-        let posY = y + 10;
-        
-        if (posX + rect.width > window.innerWidth) {
-            posX = window.innerWidth - rect.width - 10;
+        // Card is fixed-width 230px; use that directly since the card may be hidden
+        const cardW = 230;
+        const cardH = pixelInfo.offsetHeight || 110; // approx height when hidden
+
+        const MARGIN = 12;
+        let posX = x + MARGIN;
+        let posY = y + MARGIN;
+
+        if (posX + cardW > window.innerWidth - MARGIN) {
+            posX = x - cardW - MARGIN;
         }
-        
-        if (posY + rect.height > window.innerHeight) {
-            posY = window.innerHeight - rect.height - 10;
+        if (posX < MARGIN) posX = MARGIN;
+
+        if (posY + cardH > window.innerHeight - MARGIN) {
+            posY = y - cardH - MARGIN;
         }
-        
+        if (posY < MARGIN) posY = MARGIN;
+
         pixelInfo.style.left = `${posX}px`;
-        pixelInfo.style.top = `${posY}px`;
+        pixelInfo.style.top  = `${posY}px`;
     
 };
 

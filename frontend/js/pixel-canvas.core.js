@@ -59,6 +59,7 @@ class PixelCanvas {
 
         // Pixel info hover
         this.pixelInfoTimeout = null;
+        this._pixelInfoRequestId = 0;
 
         // Brush size (applies to draw and erase)
         this.brushSize = 1;

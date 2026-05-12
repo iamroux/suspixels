@@ -65,7 +65,6 @@ window.PixelCanvas.prototype.handleMouseUp = function(e) {
 };
 
 window.PixelCanvas.prototype.handleMouseLeave = function() {
-        this.hidePixelInfo();
         this.cursorGridX = -1;
         this.cursorGridY = -1;
         if (this.isPanning) {
