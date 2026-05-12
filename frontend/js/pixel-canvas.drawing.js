@@ -194,6 +194,9 @@ window.PixelCanvas.prototype.applyPendingChanges = async function() {
             const result = await response.json();
             console.log(`Batch complete: ${result.success} ok, ${result.failed} failed`);
 
+            // Play success sound
+            this.playApplySound();
+
             this.pendingChanges.clear();
             this.originalPixels.clear();
             this.updatePendingChangesCount();
@@ -211,6 +214,10 @@ window.PixelCanvas.prototype.applyPendingChanges = async function() {
 };
 
 window.PixelCanvas.prototype.discardPendingChanges = function() {
+        if (this.pendingChanges.size > 0) {
+            this.playDiscardSound();
+        }
+
         // Restore original pixels
         for (const [pixelKey, original] of this.originalPixels) {
             const [x, y] = pixelKey.split(',').map(Number);
@@ -288,7 +295,94 @@ window.PixelCanvas.prototype.deletePixel = function(x, y) {
 
 };
 
+window.PixelCanvas.prototype.playPopSound = function() {
+        if (!this.audioCtx) {
+            // Lazy-init AudioContext on first user interaction
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                this.audioCtx = new AudioContext();
+            }
+        }
+
+        if (!this.audioCtx) return;
+
+        // Resume if suspended (browser auto-play policy)
+        if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+
+        const oscillator = this.audioCtx.createOscillator();
+        const gainNode = this.audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioCtx.destination);
+
+        // A quick sine wave pop
+        oscillator.type = 'sine';
+        // Start high, quickly drop low
+        oscillator.frequency.setValueAtTime(800, this.audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(100, this.audioCtx.currentTime + 0.05);
+
+        // Sharp volume envelope
+        gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.05);
+
+        oscillator.start(this.audioCtx.currentTime);
+        oscillator.stop(this.audioCtx.currentTime + 0.05);
+};
+
+window.PixelCanvas.prototype.playApplySound = function() {
+        if (!this.audioCtx) return;
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+        // Two fast rising notes for success/apply
+        const playNote = (freq, startTime, duration) => {
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, startTime);
+            
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.3, startTime + duration * 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        };
+
+        const now = this.audioCtx.currentTime;
+        playNote(440, now, 0.1);       // A4
+        playNote(880, now + 0.1, 0.2); // A5 (octave higher)
+};
+
+window.PixelCanvas.prototype.playDiscardSound = function() {
+        if (!this.audioCtx) return;
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+        // A dull, descending low frequency sweep for discard
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200, this.audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(50, this.audioCtx.currentTime + 0.15);
+
+        gain.gain.setValueAtTime(0.4, this.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.15);
+
+        osc.start(this.audioCtx.currentTime);
+        osc.stop(this.audioCtx.currentTime + 0.15);
+};
+
 window.PixelCanvas.prototype.showPixelInfo = async function(x, y) {
+        // Play the pop sound immediately on click
+        this.playPopSound();
+
         if (this.pixelInfoTimeout) {
             clearTimeout(this.pixelInfoTimeout);
             this.pixelInfoTimeout = null;
