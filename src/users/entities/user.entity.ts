@@ -25,6 +25,9 @@ export class User {
   @Exclude()
   password: string;
 
+  @Column({ default: 'bottts' })
+  avatarStyle: string;
+
   @OneToMany(() => Pixel, (pixel: Pixel) => pixel.updatedBy)
   pixels: Pixel[];
 

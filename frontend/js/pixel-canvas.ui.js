@@ -84,7 +84,7 @@ window.PixelCanvas.prototype.setupEventListeners = function() {
                     else if (index === 1) rankPrefix = `<i class="fas fa-medal rank-icon rank-silver-icon"></i> ${rankPrefix}`;
                     else if (index === 2) rankPrefix = `<i class="fas fa-medal rank-icon rank-bronze-icon"></i> ${rankPrefix}`;
 
-                    const avatarHtml = this.getAvatarHtml(entry.name, entry.pixelCount);
+                    const avatarHtml = this.getAvatarHtml(entry.name, entry.pixelCount, entry.avatarStyle);
                     
                     nameCell.style.display = 'flex';
                     nameCell.style.alignItems = 'center';

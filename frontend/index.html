@@ -265,6 +265,17 @@
                         <input type="text" id="profile-name" required>
                     </div>
                     <div class="input-group">
+                        <label for="profile-avatar-style">Avatar Style</label>
+                        <select id="profile-avatar-style" style="width: 100%; padding: 0.75rem; background-color: var(--bg-tertiary); border: 1px solid var(--border-light); border-radius: var(--radius-md); color: white; font-family: inherit; font-size: 1rem;">
+                            <option value="bottts">bottts (Robots)</option>
+                            <option value="lorelei">lorelei (Expressive)</option>
+                            <option value="adventurer">adventurer (RPG)</option>
+                            <option value="pixel-art">pixel-art (8-bit)</option>
+                            <option value="avataaars">avataaars (Vector People)</option>
+                            <option value="shapes">shapes (Abstract)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
                         <label for="profile-email">Email</label>
                         <input type="email" id="profile-email" readonly style="background-color: rgba(255,255,255,0.05); cursor: not-allowed; border-color: transparent;">
                         <small style="color: var(--text-tertiary);">Email cannot be changed yet</small>
@@ -435,10 +446,10 @@
     </div>
 </div>
 
-    <script src="js/pixel-canvas.core.js?v=6"></script>
+    <script src="js/pixel-canvas.core.js?v=7"></script>
     <script src="js/pixel-canvas.tour.js?v=4"></script>
-    <script src="js/pixel-canvas.auth.js?v=6"></script>
-    <script src="js/pixel-canvas.ui.js?v=4"></script>
+    <script src="js/pixel-canvas.auth.js?v=7"></script>
+    <script src="js/pixel-canvas.ui.js?v=5"></script>
     <script src="js/pixel-canvas.interaction.js?v=3"></script>
     <script src="js/pixel-canvas.drawing.js?v=6"></script>
     <script src="js/pixel-canvas.network.js?v=3"></script>

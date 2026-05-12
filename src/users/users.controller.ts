@@ -23,6 +23,7 @@ export class UsersController {
     const { password, ...result } = user;
     return {
       ...result,
+      avatarStyle: user.avatarStyle,
       pixelCount,
       rank,
       mostUsedColor,
@@ -42,6 +43,6 @@ export class UsersController {
     const pixelCount = await this.usersService.getPixelCount(user.id);
     const rank = await this.usersService.getRank(user.id);
     const mostUsedColor = await this.usersService.getMostUsedColor(user.id);
-    return { name: user.name, pixelCount, rank, mostUsedColor };
+    return { name: user.name, avatarStyle: user.avatarStyle, pixelCount, rank, mostUsedColor };
   }
 }

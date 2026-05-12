@@ -191,11 +191,11 @@ window.PixelCanvas.prototype.getPrestigeClass = function(pixelCount) {
         return 'prestige-diamond';
 };
 
-window.PixelCanvas.prototype.getAvatarHtml = function(userName, pixelCount) {
+window.PixelCanvas.prototype.getAvatarHtml = function(userName, pixelCount, style) {
         const seed = encodeURIComponent(userName || 'Anonymous');
         const prestigeClass = this.getPrestigeClass(pixelCount);
-        // Using bottts style
-        const avatarUrl = `https://api.dicebear.com/9.x/bottts/svg?seed=${seed}`;
+        const avatarStyle = style || 'bottts';
+        const avatarUrl = `https://api.dicebear.com/9.x/${avatarStyle}/svg?seed=${seed}`;
         
         return `
             <div class="avatar-container ${prestigeClass}">

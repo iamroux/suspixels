@@ -136,8 +136,9 @@ window.PixelCanvas.prototype.initProfilePage = function() {
             const submitBtn = document.getElementById('save-profile-btn');
             const name = document.getElementById('profile-name').value;
             const password = document.getElementById('profile-password').value;
+            const avatarStyle = document.getElementById('profile-avatar-style').value;
             
-            const updateData = { name };
+            const updateData = { name, avatarStyle };
             if (password) updateData.password = password;
 
             this.setLoading(submitBtn, true);
@@ -226,8 +227,9 @@ window.PixelCanvas.prototype.openProfilePage = async function() {
 
             // Populate page
             this.user.pixelCount = data.pixelCount;
+            this.user.avatarStyle = data.avatarStyle || 'bottts';
             this.updateAuthUI();
-            avatarEl.innerHTML = this.getAvatarHtml(data.name, data.pixelCount);
+            avatarEl.innerHTML = this.getAvatarHtml(data.name, data.pixelCount, this.user.avatarStyle);
             pixelCountEl.textContent = data.pixelCount.toLocaleString();
             
             // Populate Rank
@@ -247,6 +249,8 @@ window.PixelCanvas.prototype.openProfilePage = async function() {
 
             nameInput.value = data.name;
             emailInput.value = data.email;
+            const styleSelect = document.getElementById('profile-avatar-style');
+            if (styleSelect) styleSelect.value = data.avatarStyle || 'bottts';
         } catch (error) {
             console.error('Profile error:', error);
             page.style.display = 'none';
@@ -285,7 +289,7 @@ window.PixelCanvas.prototype.openPublicProfilePage = async function(userName) {
 
             // Populate page
             nameEl.textContent = data.name;
-            avatarEl.innerHTML = this.getAvatarHtml(data.name, data.pixelCount);
+            avatarEl.innerHTML = this.getAvatarHtml(data.name, data.pixelCount, data.avatarStyle);
             pixelCountEl.textContent = data.pixelCount.toLocaleString();
             rankEl.textContent = `#${data.rank || 0}`;
 
@@ -412,7 +416,7 @@ window.PixelCanvas.prototype.logout = async function() {
 window.PixelCanvas.prototype.updateAuthUI = function() {
         const profileContainer = document.getElementById('user-profile');
         if (this.user) {
-            const avatarHtml = this.getAvatarHtml(this.user.name, this.user.pixelCount || 0);
+            const avatarHtml = this.getAvatarHtml(this.user.name, this.user.pixelCount || 0, this.user.avatarStyle);
             profileContainer.innerHTML = `
                 <div class="profile-info clickable" id="open-profile-btn" title="Open Dashboard">
                     <div style="width: 28px; height: 28px; flex-shrink: 0;">${avatarHtml}</div>

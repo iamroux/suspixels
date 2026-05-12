@@ -291,8 +291,10 @@ export class PixelsService {
       .createQueryBuilder('pixel')
       .innerJoin('pixel.updatedBy', 'user')
       .select('user.name', 'name')
+      .addSelect('user.avatarStyle', 'avatarStyle')
       .addSelect('COUNT(*)', 'pixelCount')
       .groupBy('user.name')
+      .addGroupBy('user.avatarStyle')
       .orderBy('COUNT(*)', 'DESC')
       .limit(10)
       .getRawMany();
