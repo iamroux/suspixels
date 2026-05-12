@@ -188,8 +188,13 @@ window.PixelCanvas.prototype.openProfilePage = async function() {
         const nameInput = document.getElementById('profile-name');
         const emailInput = document.getElementById('profile-email');
 
+        const avatarEl = document.getElementById('dash-avatar');
+        const usernameDisplayEl = document.getElementById('dash-username-display');
+
         // Show page and skeletons
         page.style.display = 'flex';
+        usernameDisplayEl.textContent = this.user.name;
+        avatarEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton" style="width:100%; height:100%; border-radius:50%;"></div>';
         pixelCountEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         document.getElementById('dash-rank').innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         document.getElementById('dash-most-used-color').innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
@@ -220,6 +225,9 @@ window.PixelCanvas.prototype.openProfilePage = async function() {
             const data = await response.json();
 
             // Populate page
+            this.user.pixelCount = data.pixelCount;
+            this.updateAuthUI();
+            avatarEl.innerHTML = this.getAvatarHtml(data.name, data.pixelCount);
             pixelCountEl.textContent = data.pixelCount.toLocaleString();
             
             // Populate Rank
@@ -256,9 +264,12 @@ window.PixelCanvas.prototype.openPublicProfilePage = async function(userName) {
         const mostUsedColorEl = document.getElementById('public-dash-most-used-color');
         const colorPreviewEl = document.getElementById('public-dash-color-preview');
 
+        const avatarEl = document.getElementById('public-profile-avatar');
+
         // Show modal and skeletons
         modal.style.display = 'flex';
         nameEl.textContent = userName;
+        avatarEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton" style="width:100%; height:100%; border-radius:50%;"></div>';
         pixelCountEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         rankEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
         mostUsedColorEl.innerHTML = '<div class="skeleton-dark dash-stat-skeleton"></div>';
@@ -274,6 +285,7 @@ window.PixelCanvas.prototype.openPublicProfilePage = async function(userName) {
 
             // Populate page
             nameEl.textContent = data.name;
+            avatarEl.innerHTML = this.getAvatarHtml(data.name, data.pixelCount);
             pixelCountEl.textContent = data.pixelCount.toLocaleString();
             rankEl.textContent = `#${data.rank || 0}`;
 
@@ -400,10 +412,10 @@ window.PixelCanvas.prototype.logout = async function() {
 window.PixelCanvas.prototype.updateAuthUI = function() {
         const profileContainer = document.getElementById('user-profile');
         if (this.user) {
-            const initial = this.user.name.charAt(0).toUpperCase();
+            const avatarHtml = this.getAvatarHtml(this.user.name, this.user.pixelCount || 0);
             profileContainer.innerHTML = `
                 <div class="profile-info clickable" id="open-profile-btn" title="Open Dashboard">
-                    <div class="user-avatar">${initial}</div>
+                    <div style="width: 28px; height: 28px; flex-shrink: 0;">${avatarHtml}</div>
                     <span class="user-name-label">${this.user.name}</span>
                 </div>
             `;

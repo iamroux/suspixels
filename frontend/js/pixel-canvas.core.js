@@ -179,3 +179,27 @@ window.PixelCanvas.prototype.centerCanvas = function() {
         this.render();
     
 };
+
+window.PixelCanvas.prototype.getPrestigeClass = function(pixelCount) {
+        if (!pixelCount || pixelCount < 100) return 'prestige-basic';
+        if (pixelCount < 500) return 'prestige-bronze';
+        if (pixelCount < 1000) return 'prestige-silver';
+        if (pixelCount < 5000) return 'prestige-gold';
+        if (pixelCount < 10000) return 'prestige-platinum';
+        if (pixelCount < 50000) return 'prestige-amethyst';
+        if (pixelCount < 100000) return 'prestige-ruby';
+        return 'prestige-diamond';
+};
+
+window.PixelCanvas.prototype.getAvatarHtml = function(userName, pixelCount) {
+        const seed = encodeURIComponent(userName || 'Anonymous');
+        const prestigeClass = this.getPrestigeClass(pixelCount);
+        // Using bottts style
+        const avatarUrl = `https://api.dicebear.com/9.x/bottts/svg?seed=${seed}`;
+        
+        return `
+            <div class="avatar-container ${prestigeClass}">
+                <img src="${avatarUrl}" alt="${userName}" class="avatar-image">
+            </div>
+        `;
+};

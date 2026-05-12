@@ -316,3 +316,94 @@
     background-color: #ef4444;
     color: white;
 }
+
+/* ─── Prestige Avatars ───────────────────────────────────────────── */
+
+.avatar-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+}
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: var(--bg-tertiary); /* fallback bg for transparent dicebear */
+}
+
+/* Base border style */
+.prestige-border {
+    padding: 3px; /* Space for the border */
+    background-clip: padding-box;
+    border: 3px solid transparent;
+}
+
+/* Ranks */
+.prestige-basic {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.prestige-bronze {
+    border-color: #cd7f32;
+    box-shadow: 0 0 8px rgba(205, 127, 50, 0.4);
+}
+
+.prestige-silver {
+    border-color: #c0c0c0;
+    box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+.prestige-gold {
+    border-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+}
+
+.prestige-platinum {
+    border-color: #e5e4e2;
+    box-shadow: 0 0 20px rgba(229, 228, 226, 0.8), inset 0 0 10px rgba(229, 228, 226, 0.5);
+    animation: pulse-platinum 2s infinite alternate;
+}
+
+@keyframes pulse-platinum {
+    from { box-shadow: 0 0 10px rgba(14, 212, 233, 0.4); border-color: #0ed4e9; }
+    to { box-shadow: 0 0 25px rgba(14, 212, 233, 0.9); border-color: #ffffff; }
+}
+
+.prestige-amethyst {
+    border-color: #9b59b6;
+    animation: pulse-amethyst 1.5s infinite alternate;
+}
+
+@keyframes pulse-amethyst {
+    from { box-shadow: 0 0 10px rgba(155, 89, 182, 0.6); }
+    to { box-shadow: 0 0 30px rgba(155, 89, 182, 1), 0 0 10px rgba(142, 68, 173, 0.8) inset; border-color: #d2b4de; }
+}
+
+.prestige-ruby {
+    background: linear-gradient(var(--bg-primary), var(--bg-primary)) padding-box,
+                linear-gradient(45deg, #ff0000, #ff7300, #ff0000) border-box;
+    border: 3px solid transparent;
+    animation: rotate-gradient 3s linear infinite;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
+}
+
+.prestige-diamond {
+    background: linear-gradient(var(--bg-primary), var(--bg-primary)) padding-box,
+                linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000) border-box;
+    background-size: 200% 200%;
+    border: 3px solid transparent;
+    animation: rotate-gradient 2s linear infinite;
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes rotate-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}

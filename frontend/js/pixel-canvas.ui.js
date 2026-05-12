@@ -84,7 +84,17 @@ window.PixelCanvas.prototype.setupEventListeners = function() {
                     else if (index === 1) rankPrefix = `<i class="fas fa-medal rank-icon rank-silver-icon"></i> ${rankPrefix}`;
                     else if (index === 2) rankPrefix = `<i class="fas fa-medal rank-icon rank-bronze-icon"></i> ${rankPrefix}`;
 
-                    nameCell.innerHTML = `${rankPrefix}<span class="player-name">${entry.name}</span>`;
+                    const avatarHtml = this.getAvatarHtml(entry.name, entry.pixelCount);
+                    
+                    nameCell.style.display = 'flex';
+                    nameCell.style.alignItems = 'center';
+                    nameCell.style.gap = '10px';
+
+                    nameCell.innerHTML = `
+                        ${rankPrefix}
+                        <div style="width: 28px; height: 28px; flex-shrink: 0;">${avatarHtml}</div>
+                        <span class="player-name">${entry.name}</span>
+                    `;
                     countCell.innerHTML = `<span class="pixel-count">${entry.pixelCount.toLocaleString()}</span>`;
 
                     row.appendChild(nameCell);
