@@ -430,6 +430,27 @@ window.PixelCanvas.prototype.logout = async function() {
     
 };
 
+window.PixelCanvas.prototype.refreshSession = async function() {
+        if (!this.user) return;
+        try {
+            const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
+                credentials: 'include',
+                headers: this.getAuthHeaders(),
+            });
+            if (response.ok) {
+                const data = await response.json();
+                this.user.avatarStyle = data.avatarStyle || 'bottts';
+                this.user.pixelCount = data.pixelCount || 0;
+                this.user.name = data.name;
+                localStorage.setItem('pixelUser', JSON.stringify(this.user));
+                this.userName = data.name;
+                this.updateAuthUI();
+            }
+        } catch (e) {
+            console.warn('Silent session refresh failed', e);
+        }
+};
+
 window.PixelCanvas.prototype.updateAuthUI = function() {
         const profileContainer = document.getElementById('user-profile');
         if (this.user) {

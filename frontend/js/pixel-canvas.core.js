@@ -98,6 +98,7 @@ window.PixelCanvas.prototype.init = function() {
         this.initProfilePage();
         this.initColdStartBanner();
         this.updateAuthUI();
+        this.refreshSession();
         this.connectWebSocket();
         this.loadPixels();
         this.centerCanvas();
