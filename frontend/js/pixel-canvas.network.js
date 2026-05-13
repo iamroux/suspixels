@@ -48,6 +48,7 @@ window.PixelCanvas.prototype.connectWebSocket = function() {
             this.connected = true;
             this.updateConnectionStatus();
             this.sendIdentify();
+            this.startHeartbeat();
             if (this._hideColdStartBanner) this._hideColdStartBanner();
             if (this._wsEverConnected) {
                 this.loadPixels();
@@ -58,6 +59,7 @@ window.PixelCanvas.prototype.connectWebSocket = function() {
         this.ws.onclose = () => {
             console.log('WebSocket disconnected');
             this.connected = false;
+            this.stopHeartbeat();
             this.updateConnectionStatus();
             setTimeout(() => this.connectWebSocket(), 3000);
         };
@@ -138,6 +140,22 @@ window.PixelCanvas.prototype.sendIdentify = function() {
             console.warn('identify send failed', e);
         }
     
+};
+
+window.PixelCanvas.prototype.startHeartbeat = function() {
+    this.stopHeartbeat();
+    this._heartbeatInterval = setInterval(() => {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: 'ping' }));
+        }
+    }, 20000);
+};
+
+window.PixelCanvas.prototype.stopHeartbeat = function() {
+    if (this._heartbeatInterval) {
+        clearInterval(this._heartbeatInterval);
+        this._heartbeatInterval = null;
+    }
 };
 
 window.PixelCanvas.prototype.loadPixels = async function() {

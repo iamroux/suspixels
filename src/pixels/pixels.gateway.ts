@@ -15,6 +15,7 @@ import { UsersService } from '../users/users.service';
 
 interface ExtWebSocket extends WebSocket {
   isAlive: boolean;
+  lastSeen: number;
 }
 
 @WebSocketGateway({
@@ -40,20 +41,21 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   private flushScheduled = false;
 
   afterInit() {
+    // Evict clients that haven't sent a heartbeat in 35 seconds.
+    // We rely on the CLIENT sending pings because Render's proxy intercepts
+    // server-side pings and responds on behalf of dead browsers.
     setInterval(() => {
+      const now = Date.now();
       let changed = false;
-      this.clients.forEach((_name, client: ExtWebSocket) => {
-        if (client.isAlive === false || client.readyState !== WebSocket.OPEN) {
-          client.terminate();
-          this.clients.delete(client);
+      this.clients.forEach((_name, ws: ExtWebSocket) => {
+        if (ws.readyState !== WebSocket.OPEN || (ws.lastSeen && now - ws.lastSeen > 35000)) {
+          ws.terminate();
+          this.clients.delete(ws);
           changed = true;
-        } else {
-          client.isAlive = false;
-          client.ping();
         }
       });
       if (changed) this.broadcastUserCount();
-    }, 15000);
+    }, 10000);
   }
 
   // Fix 17: listen to domain events emitted by PixelsService
@@ -106,9 +108,11 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   async handleConnection(client: ExtWebSocket, request: IncomingMessage) {
     this.logger.log('New client connected');
     client.isAlive = true;
+    client.lastSeen = Date.now();
 
     client.on('pong', () => {
       client.isAlive = true;
+      client.lastSeen = Date.now();
     });
 
     client.on('close', () => {
@@ -162,6 +166,8 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
           this.logger.log(`Guest identified: ${name}`);
           this.clients.set(client, name);
           this.broadcastUserCount();
+        } else if (msg?.type === 'ping') {
+          client.lastSeen = Date.now();
         }
       } catch (e) {
         this.logger.error(`Error handling message: ${e.message}`);
@@ -183,7 +189,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     ).sort((a, b) => a.localeCompare(b));
     const message = JSON.stringify({
       type: 'user_count',
-      count: names.length || this.clients.size,
+      count: names.length,
       names,
     });
     this.clients.forEach((_name, client) => {
