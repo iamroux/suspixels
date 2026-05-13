@@ -10,6 +10,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { Server, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import { JwtService } from '@nestjs/jwt';
+import { UsersService } from '../users/users.service';
 
 @WebSocketGateway({
   cors: true,
@@ -18,7 +19,10 @@ import { JwtService } from '@nestjs/jwt';
 export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @WebSocketServer()
   server: Server;
@@ -77,7 +81,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     );
   }
 
-  handleConnection(client: WebSocket, request: IncomingMessage) {
+  async handleConnection(client: WebSocket, request: IncomingMessage) {
     this.logger.log('New client connected');
 
     let initialName = '';
@@ -87,7 +91,8 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       if (token) {
         try {
           const payload = this.jwtService.verify(token);
-          initialName = payload.name;
+          const user = await this.usersService.findById(payload.sub);
+          initialName = user ? user.name : payload.name;
           this.logger.log(`Authenticated WS client via cookie: ${initialName}`);
         } catch (e) {
           this.logger.warn(`Invalid WS cookie token: ${e.message}`);
@@ -97,14 +102,15 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
     this.clients.set(client, initialName);
 
-    client.on('message', (raw: Buffer) => {
+    client.on('message', async (raw: Buffer) => {
       try {
         const msg = JSON.parse(raw.toString());
         if (msg?.type === 'identify') {
           if (msg.token) {
             try {
               const payload = this.jwtService.verify(msg.token);
-              const verified = payload.name || msg.name?.trim().slice(0, 40) || 'User';
+              const user = await this.usersService.findById(payload.sub);
+              const verified = user ? user.name : (payload.name || msg.name?.trim().slice(0, 40) || 'User');
               this.logger.log(`Authenticated WS client via identify token: ${verified}`);
               this.clients.set(client, verified);
               this.broadcastUserCount();
