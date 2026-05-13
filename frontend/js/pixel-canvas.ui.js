@@ -345,8 +345,6 @@ window.PixelCanvas.prototype.initUsersPopover = function() {
             }
         });
     
-        });
-    
 };
 
 window.PixelCanvas.prototype.handleCursorUpdate = function(data) {
