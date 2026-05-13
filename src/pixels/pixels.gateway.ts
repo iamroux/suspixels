@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -12,11 +13,15 @@ import { IncomingMessage } from 'http';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 
+interface ExtWebSocket extends WebSocket {
+  isAlive: boolean;
+}
+
 @WebSocketGateway({
   cors: true,
   transports: ['websocket', 'polling'],
 })
-export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
 
   constructor(
@@ -33,6 +38,23 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   private pendingUpdates: any[] = [];
   private pendingDeletes: { x: number; y: number }[] = [];
   private flushScheduled = false;
+
+  afterInit() {
+    setInterval(() => {
+      let changed = false;
+      this.clients.forEach((_name, client: ExtWebSocket) => {
+        if (client.isAlive === false || client.readyState !== WebSocket.OPEN) {
+          client.terminate();
+          this.clients.delete(client);
+          changed = true;
+        } else {
+          client.isAlive = false;
+          client.ping();
+        }
+      });
+      if (changed) this.broadcastUserCount();
+    }, 15000);
+  }
 
   // Fix 17: listen to domain events emitted by PixelsService
   @OnEvent('pixel.updated')
@@ -81,8 +103,24 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     );
   }
 
-  async handleConnection(client: WebSocket, request: IncomingMessage) {
+  async handleConnection(client: ExtWebSocket, request: IncomingMessage) {
     this.logger.log('New client connected');
+    client.isAlive = true;
+
+    client.on('pong', () => {
+      client.isAlive = true;
+    });
+
+    client.on('close', () => {
+      this.logger.log('Client connection closed');
+      this.clients.delete(client);
+      this.broadcastUserCount();
+    });
+
+    client.on('error', () => {
+      this.clients.delete(client);
+      this.broadcastUserCount();
+    });
 
     let initialName = '';
     const cookieHeader = request?.headers?.cookie || '';
