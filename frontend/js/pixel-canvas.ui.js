@@ -345,4 +345,69 @@ window.PixelCanvas.prototype.initUsersPopover = function() {
             }
         });
     
+        });
+    
+};
+
+window.PixelCanvas.prototype.handleCursorUpdate = function(data) {
+    if (!data.name) return;
+    this.cursors.set(data.name, {
+        x: data.x,
+        y: data.y,
+        tool: data.tool,
+        avatarStyle: data.avatarStyle,
+        pixelCount: data.pixelCount,
+        lastUpdate: Date.now()
+    });
+};
+
+window.PixelCanvas.prototype.renderCursors = function() {
+    const layer = document.getElementById('cursors-layer');
+    if (!layer) return;
+
+    const now = Date.now();
+    
+    // Remove stale cursors
+    for (const [name, data] of this.cursors.entries()) {
+        if (now - data.lastUpdate > 5000) {
+            this.cursors.delete(name);
+            const el = document.getElementById('cursor-' + name);
+            if (el) el.remove();
+        }
+    }
+
+    for (const [name, data] of this.cursors.entries()) {
+        let el = document.getElementById('cursor-' + name);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'cursor-' + name;
+            el.className = 'live-cursor';
+            
+            el.innerHTML = `
+                <div class="cursor-icon"><i class="fas fa-mouse-pointer"></i></div>
+                <div class="cursor-label">
+                    <div class="cursor-avatar">${this.getAvatarHtml(name, data.pixelCount, data.avatarStyle)}</div>
+                    <span class="cursor-name">${name}</span>
+                </div>
+            `;
+            layer.appendChild(el);
+        }
+
+        const iconEl = el.querySelector('.cursor-icon i');
+        if (data.tool === 'draw') {
+            iconEl.className = 'fas fa-paint-brush';
+            iconEl.style.color = 'var(--text-primary)';
+        } else if (data.tool === 'pan') {
+            iconEl.className = 'fas fa-hand-paper';
+            iconEl.style.color = 'var(--text-secondary)';
+        } else {
+            iconEl.className = 'fas fa-mouse-pointer';
+            iconEl.style.color = 'var(--text-primary)';
+        }
+
+        const screenX = data.x * this.zoom + this.viewportX;
+        const screenY = data.y * this.zoom + this.viewportY;
+        
+        el.style.transform = `translate(${screenX}px, ${screenY}px)`;
+    }
 };

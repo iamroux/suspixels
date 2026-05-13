@@ -39,6 +39,11 @@ window.PixelCanvas.prototype.handleMouseMove = function(e) {
         const gridPos = this.screenToGrid(x, y);
         document.getElementById('coordinates').textContent = `${gridPos.x}, ${gridPos.y}`;
 
+        const canvasX = (x - this.viewportX) / this.zoom;
+        const canvasY = (y - this.viewportY) / this.zoom;
+        let tool = this.isPanning ? 'pan' : (this.isEditMode ? 'draw' : 'view');
+        if (this.sendCursorMove) this.sendCursorMove(canvasX, canvasY, tool);
+
         if (this.isPanning) {
             this.updatePan(x, y);
         }
@@ -138,6 +143,11 @@ window.PixelCanvas.prototype.handleTouchMove = function(e) {
 
             if (moveDistance > 5) {
                 this.touchMoved = true;
+
+                const canvasX = (x - this.viewportX) / this.zoom;
+                const canvasY = (y - this.viewportY) / this.zoom;
+                let tool = this.isEditMode && this.isContinuousDraw ? 'draw' : 'pan';
+                if (this.sendCursorMove) this.sendCursorMove(canvasX, canvasY, tool);
 
                 if (this.isEditMode && this.isContinuousDraw) {
                     const gridPos = this.screenToGrid(x, y);

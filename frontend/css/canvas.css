@@ -292,3 +292,60 @@
 .header-icon-btn i {
     font-size: 0.8rem;
 }
+
+/* Live Multiplayer Cursors */
+.live-cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: transform 0.1s linear, opacity 0.3s ease;
+    will-change: transform;
+}
+
+.cursor-icon {
+    font-size: 1.25rem;
+    filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));
+    transform: translate(-4px, -2px);
+}
+
+.cursor-label {
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border-medium);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    box-shadow: var(--shadow-md);
+    margin-top: 0.25rem;
+    margin-left: 0.5rem;
+    transform-origin: top left;
+    animation: cursorPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cursor-avatar {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.cursor-name {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+@keyframes cursorPop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}

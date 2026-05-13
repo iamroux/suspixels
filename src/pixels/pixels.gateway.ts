@@ -4,6 +4,7 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
 } from '@nestjs/websockets';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -16,7 +17,7 @@ import { UsersService } from '../users/users.service';
   cors: true,
   transports: ['websocket', 'polling'],
 })
-export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
 
   constructor(
@@ -27,12 +28,29 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   @WebSocketServer()
   server: Server;
 
-  private clients: Map<WebSocket, string> = new Map();
+  private clients: Map<WebSocket, { name: string; avatarStyle: string; pixelCount: number; isAlive: boolean }> = new Map();
 
   // Fix 16: batch buffer — collect all updates within a single event loop tick
   private pendingUpdates: any[] = [];
   private pendingDeletes: { x: number; y: number }[] = [];
   private flushScheduled = false;
+
+  afterInit() {
+    setInterval(() => {
+      let changed = false;
+      this.clients.forEach((info, client) => {
+        if (!info.isAlive || client.readyState !== WebSocket.OPEN) {
+          client.terminate();
+          this.clients.delete(client);
+          changed = true;
+        } else {
+          info.isAlive = false;
+          client.ping();
+        }
+      });
+      if (changed) this.broadcastUserCount();
+    }, 15000); // Check every 15 seconds
+  }
 
   // Fix 17: listen to domain events emitted by PixelsService
   @OnEvent('pixel.updated')
@@ -64,7 +82,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
     const message = JSON.stringify({ type: 'batch_update', updates, deletes });
 
-    this.clients.forEach((_name, client) => {
+    this.clients.forEach((_info, client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
       }
@@ -85,6 +103,8 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     this.logger.log('New client connected');
 
     let initialName = '';
+    let initialAvatar = 'bottts';
+    let initialCount = 0;
     const cookieHeader = request?.headers?.cookie || '';
     if (cookieHeader) {
       const token = this.parseCookies(cookieHeader)['access_token'];
@@ -92,7 +112,13 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         try {
           const payload = this.jwtService.verify(token);
           const user = await this.usersService.findById(payload.sub);
-          initialName = user ? user.name : payload.name;
+          if (user) {
+            initialName = user.name;
+            initialAvatar = user.avatarStyle || 'bottts';
+            initialCount = await this.usersService.getPixelCount(user.id);
+          } else {
+            initialName = payload.name;
+          }
           this.logger.log(`Authenticated WS client via cookie: ${initialName}`);
         } catch (e) {
           this.logger.warn(`Invalid WS cookie token: ${e.message}`);
@@ -100,7 +126,12 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       }
     }
 
-    this.clients.set(client, initialName);
+    this.clients.set(client, { name: initialName, avatarStyle: initialAvatar, pixelCount: initialCount, isAlive: true });
+
+    client.on('pong', () => {
+      const info = this.clients.get(client);
+      if (info) info.isAlive = true;
+    });
 
     client.on('message', async (raw: Buffer) => {
       try {
@@ -111,8 +142,10 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
               const payload = this.jwtService.verify(msg.token);
               const user = await this.usersService.findById(payload.sub);
               const verified = user ? user.name : (payload.name || msg.name?.trim().slice(0, 40) || 'User');
+              const avatarStyle = user ? user.avatarStyle || 'bottts' : 'bottts';
+              const pixelCount = user ? await this.usersService.getPixelCount(user.id) : 0;
               this.logger.log(`Authenticated WS client via identify token: ${verified}`);
-              this.clients.set(client, verified);
+              this.clients.set(client, { name: verified, avatarStyle, pixelCount, isAlive: true });
               this.broadcastUserCount();
               return;
             } catch {
@@ -122,12 +155,41 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
           if (initialName) { this.broadcastUserCount(); return; }
           const name = `${msg.name?.trim().slice(0, 40) || 'Guest'} (Guest)`;
           this.logger.log(`Guest identified: ${name}`);
-          this.clients.set(client, name);
+          this.clients.set(client, { name, avatarStyle: 'bottts', pixelCount: 0, isAlive: true });
           this.broadcastUserCount();
+        } else if (msg?.type === 'cursor_move') {
+          const info = this.clients.get(client);
+          if (info && info.name) {
+            const outMsg = JSON.stringify({
+              type: 'cursor_update',
+              name: info.name,
+              avatarStyle: info.avatarStyle,
+              pixelCount: info.pixelCount,
+              x: msg.x,
+              y: msg.y,
+              tool: msg.tool
+            });
+            this.clients.forEach((_v, otherClient) => {
+              if (otherClient !== client && otherClient.readyState === WebSocket.OPEN) {
+                otherClient.send(outMsg);
+              }
+            });
+          }
         }
       } catch (e) {
         this.logger.error(`Error handling message: ${e.message}`);
       }
+    });
+
+    client.on('close', () => {
+      this.logger.log('Client connection closed');
+      this.clients.delete(client);
+      this.broadcastUserCount();
+    });
+
+    client.on('error', () => {
+      this.clients.delete(client);
+      this.broadcastUserCount();
     });
 
     this.broadcastUserCount();
@@ -141,14 +203,14 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   private broadcastUserCount() {
     const names = Array.from(
-      new Set(Array.from(this.clients.values()).filter((n) => n?.length > 0)),
+      new Set(Array.from(this.clients.values()).filter((v) => v?.name?.length > 0).map(v => v.name)),
     ).sort((a, b) => a.localeCompare(b));
     const message = JSON.stringify({
       type: 'user_count',
       count: names.length || this.clients.size,
       names,
     });
-    this.clients.forEach((_name, client) => {
+    this.clients.forEach((_v, client) => {
       if (client.readyState === WebSocket.OPEN) client.send(message);
     });
   }

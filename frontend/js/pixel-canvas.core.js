@@ -48,6 +48,7 @@ class PixelCanvas {
         this._wsEverConnected = false;
         this.userCount = 0;
         this.userNames = [];
+        this.cursors = new Map();
 
         // Touch handling
         this.touches = [];

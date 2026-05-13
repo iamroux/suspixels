@@ -107,6 +107,9 @@ window.PixelCanvas.prototype.handleWebSocketMessage = function(data) {
                 document.getElementById('users-count').textContent = `${data.count} online`;
                 this.renderUsersPopover();
                 break;
+            case 'cursor_update':
+                if (this.handleCursorUpdate) this.handleCursorUpdate(data);
+                break;
         }
     
 };
@@ -138,6 +141,26 @@ window.PixelCanvas.prototype.sendIdentify = function() {
             console.warn('identify send failed', e);
         }
     
+};
+
+window.PixelCanvas.prototype.sendCursorMove = function(x, y, tool) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        // Throttle to 10fps
+        const now = Date.now();
+        if (!this._lastCursorSend) this._lastCursorSend = 0;
+        if (now - this._lastCursorSend < 100) return;
+        this._lastCursorSend = now;
+        
+        try {
+            this.ws.send(JSON.stringify({
+                type: 'cursor_move',
+                x,
+                y,
+                tool
+            }));
+        } catch (e) {
+            // Ignore send errors
+        }
 };
 
 window.PixelCanvas.prototype.loadPixels = async function() {
