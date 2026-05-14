@@ -30,7 +30,7 @@ export class PixelsService {
   private readonly BATCH_SIZE = 100;
   private readonly BUFFER_TTL = 300;       // 5 min
   private readonly PIXEL_GRID_TTL = 3600; // unused — pixel_grid has no TTL
-  private readonly LEADERBOARD_TTL = 30;   // 30 seconds
+  private readonly LEADERBOARD_TTL = 3600; // 1 hour
   private readonly GRID_SIZE = 3000;
   private readonly SNAPSHOT_TTL_MS = 60_000;
   private snapshotCache: { buffer: Buffer; builtAt: number } | null = null;
