@@ -27,7 +27,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          pg_dump "$DATABASE_URL" | gzip > "db_backups/backup_$(date +%Y-%m-%d).sql.gz"
+          /usr/lib/postgresql/18/bin/pg_dump "$DATABASE_URL" | gzip > "db_backups/backup_$(date +%Y-%m-%d).sql.gz"
 
       - name: Keep only 3 most recent backups
         run: |
