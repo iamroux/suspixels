@@ -43,4 +43,19 @@ describe('WebsocketGateway online count', () => {
 
     expect(lastBroadcast(solo).count).toBe(1);
   });
+
+  it('deduplicates same user across multiple tabs/devices', () => {
+    const tab1 = fakeClient();
+    const tab2 = fakeClient();
+    const tab3 = fakeClient();
+    gateway['clients'].set(tab1, 'roux');
+    gateway['clients'].set(tab2, 'roux');
+    gateway['clients'].set(tab3, 'roux');
+
+    gateway['broadcastUserCount']();
+
+    const msg = lastBroadcast(tab1);
+    expect(msg.count).toBe(1);
+    expect(msg.names).toEqual(['roux']);
+  });
 });

@@ -170,15 +170,17 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   private broadcastUserCount() {
-    // names = de-duplicated list of identified users (drives the popover).
-    // count = every open socket, including clients that haven't identified
-    // yet — otherwise a lone unidentified client shows as "0 online".
+    // Deduplicate named users so multi-tab/multi-device same user counts once.
+    // Anonymous sockets (pre-identify, or never identified) each count as one
+    // separate presence so a lone visitor isn't shown as "0 online".
+    const allValues = Array.from(this.clients.values());
     const names = Array.from(
-      new Set(Array.from(this.clients.values()).filter((n) => n?.length > 0)),
+      new Set(allValues.filter((n) => n?.length > 0)),
     ).sort((a, b) => a.localeCompare(b));
+    const anonCount = allValues.filter((n) => !n?.length).length;
     const message = JSON.stringify({
       type: 'user_count',
-      count: this.clients.size,
+      count: names.length + anonCount,
       names,
     });
     this.clients.forEach((_name, client) => {

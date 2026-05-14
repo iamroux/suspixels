@@ -286,7 +286,7 @@ window.PixelCanvas.prototype.renderUsersPopover = function() {
             })[c]);
             return `<li class="users-popover-item${isMe ? ' is-me' : ''}">${safe}${isMe ? ' <span class="me-tag">(you)</span>' : ''}</li>`;
         }).join('');
-        popover.innerHTML = `<div class="users-popover-title">Online (${names.length})</div><ul class="users-popover-list">${items}</ul>`;
+        popover.innerHTML = `<div class="users-popover-title">Online (${this.userCount})</div><ul class="users-popover-list">${items}</ul>`;
     
 };
 
