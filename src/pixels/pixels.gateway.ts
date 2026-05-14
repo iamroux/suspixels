@@ -5,7 +5,6 @@ import {
   OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  SubscribeMessage,
 } from '@nestjs/websockets';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Server, WebSocket } from 'ws';
@@ -14,7 +13,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 
 interface ExtWebSocket extends WebSocket {
-  isAlive: boolean;
   lastSeen: number;
 }
 
@@ -107,24 +105,12 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
   async handleConnection(client: ExtWebSocket, request: IncomingMessage) {
     this.logger.log('New client connected');
-    client.isAlive = true;
     client.lastSeen = Date.now();
 
-    client.on('pong', () => {
-      client.isAlive = true;
-      client.lastSeen = Date.now();
-    });
-
-    client.on('close', () => {
-      this.logger.log('Client connection closed');
-      this.clients.delete(client);
-      this.broadcastUserCount();
-    });
-
-    client.on('error', () => {
-      this.clients.delete(client);
-      this.broadcastUserCount();
-    });
+    // Disconnect cleanup runs in handleDisconnect (fires on 'close', including
+    // after a socket error). This listener exists only so an 'error' event
+    // can't crash the process for lack of a handler.
+    client.on('error', (e) => this.logger.warn(`WS client error: ${e.message}`));
 
     let initialName = '';
     const cookieHeader = request?.headers?.cookie || '';
@@ -184,21 +170,19 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   private broadcastUserCount() {
+    // names = de-duplicated list of identified users (drives the popover).
+    // count = every open socket, including clients that haven't identified
+    // yet — otherwise a lone unidentified client shows as "0 online".
     const names = Array.from(
       new Set(Array.from(this.clients.values()).filter((n) => n?.length > 0)),
     ).sort((a, b) => a.localeCompare(b));
     const message = JSON.stringify({
       type: 'user_count',
-      count: names.length,
+      count: this.clients.size,
       names,
     });
     this.clients.forEach((_name, client) => {
       if (client.readyState === WebSocket.OPEN) client.send(message);
     });
-  }
-
-  @SubscribeMessage('message')
-  handleMessage(_client: WebSocket, payload: any): void {
-    this.logger.log('Received message:', payload);
   }
 }
