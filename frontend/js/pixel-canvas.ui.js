@@ -110,7 +110,9 @@ window.PixelCanvas.prototype.setupEventListeners = function() {
         document.getElementById('close-leaderboard').addEventListener('click', () => {
             document.getElementById('leaderboard-modal').style.display = 'none';
         });
-    
+
+        document.getElementById('download-png-btn').addEventListener('click', () => this.downloadSnapshot());
+
 };
 
 window.PixelCanvas.prototype.setupColorPicker = function() {

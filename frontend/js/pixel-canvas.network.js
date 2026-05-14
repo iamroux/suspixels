@@ -158,6 +158,35 @@ window.PixelCanvas.prototype.stopHeartbeat = function() {
     }
 };
 
+window.PixelCanvas.prototype.downloadSnapshot = async function() {
+        const btn = document.getElementById('download-png-btn');
+        const label = btn ? btn.querySelector('span') : null;
+        const original = label ? label.textContent : null;
+        if (label) label.textContent = 'Downloading…';
+        if (btn) btn.disabled = true;
+        try {
+            // Fetch as a blob: the frontend and API are different origins, and
+            // the <a download> attribute is ignored for cross-origin hrefs.
+            const response = await fetch(`${this.getApiBaseUrl()}/api/pixels/snapshot`);
+            if (!response.ok) throw new Error(`snapshot fetch failed: ${response.status}`);
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `suspixels-${new Date().toISOString().slice(0, 10)}.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.warn('Download failed', e);
+        } finally {
+            if (label && original !== null) label.textContent = original;
+            if (btn) btn.disabled = false;
+        }
+
+};
+
 window.PixelCanvas.prototype.loadPixels = async function() {
         const hideLoader = () => {
             if (this._hideColdStartBanner) this._hideColdStartBanner();
