@@ -2,33 +2,25 @@
 
 // Pointer, touch, pan, zoom, and coordinate behavior. Methods are split from the original PixelCanvas class without behavior changes.
 
+// Drag threshold (px) for treating mouse/touchpad press-and-move as a pan
+// instead of a click. Mirrors the 5px used for touch in handleTouchMove.
+const MOUSE_DRAG_THRESHOLD = 5;
+
 window.PixelCanvas.prototype.handleMouseDown = function(e) {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        if (e.button === 0) {
-            const gridPos = this.screenToGrid(x, y);
-            if (this.isValidGridPosition(gridPos.x, gridPos.y)) {
-                if (this.isColorPickerMode) {
-                    this.handlePixelColorPick(gridPos.x, gridPos.y);
-                    this.toggleColorPickerMode();
-                } else if (this.isEditMode) {
-                    this.placePixel(gridPos.x, gridPos.y);
-                } else {
-                    // Explore mode: Show info on click
-                    if (this.pixels.has(`${gridPos.x},${gridPos.y}`)) {
-                        this.updatePixelInfoPosition(e.clientX, e.clientY);
-                        this.showPixelInfo(gridPos.x, gridPos.y);
-                    } else {
-                        this.hidePixelInfo();
-                    }
-                }
-            }
-        } else if (e.button === 2) {
-            this.startPan(x, y);
-        }
-    
+        // Defer the click action until mouseup — if the user drags past the
+        // threshold first, we treat the gesture as a pan instead. This lets
+        // both left- and right-click+drag pan (matches touchpad expectations),
+        // while a plain left click still places a pixel / shows pixel info.
+        this._mouseDownButton = e.button;
+        this._mouseDownX = x;
+        this._mouseDownY = y;
+        this._mouseDownClientX = e.clientX;
+        this._mouseDownClientY = e.clientY;
+        this._mouseDidDrag = false;
 };
 
 window.PixelCanvas.prototype.handleMouseMove = function(e) {
@@ -39,8 +31,28 @@ window.PixelCanvas.prototype.handleMouseMove = function(e) {
         const gridPos = this.screenToGrid(x, y);
         document.getElementById('coordinates').textContent = `${gridPos.x}, ${gridPos.y}`;
 
-        if (this.isPanning) {
-            this.updatePan(x, y);
+        // A pending mousedown that has now travelled past the threshold becomes
+        // a drag. Left-button drag in edit+continuous-draw paints; otherwise we
+        // pan (left or right).
+        if (this._mouseDownButton !== undefined) {
+            if (!this._mouseDidDrag) {
+                const dx = x - this._mouseDownX;
+                const dy = y - this._mouseDownY;
+                if (dx * dx + dy * dy > MOUSE_DRAG_THRESHOLD * MOUSE_DRAG_THRESHOLD) {
+                    this._mouseDidDrag = true;
+                    const drawing = this._mouseDownButton === 0 && this.isEditMode && this.isContinuousDraw;
+                    if (!drawing) this.startPan(this._mouseDownX, this._mouseDownY);
+                }
+            }
+            if (this._mouseDidDrag) {
+                if (this._mouseDownButton === 0 && this.isEditMode && this.isContinuousDraw) {
+                    if (this.isValidGridPosition(gridPos.x, gridPos.y)) {
+                        this.placePixel(gridPos.x, gridPos.y);
+                    }
+                } else {
+                    this.updatePan(x, y);
+                }
+            }
         }
 
         if (this.isEditMode) {
@@ -54,14 +66,47 @@ window.PixelCanvas.prototype.handleMouseMove = function(e) {
                 });
             }
         }
-    
+
 };
 
 window.PixelCanvas.prototype.handleMouseUp = function(e) {
-        if (e.button === 2) {
+        if (this._mouseDownButton === undefined) return;
+
+        const wasDrag = this._mouseDidDrag;
+        const button = this._mouseDownButton;
+        const startX = this._mouseDownX;
+        const startY = this._mouseDownY;
+        const clientX = this._mouseDownClientX;
+        const clientY = this._mouseDownClientY;
+        this._mouseDownButton = undefined;
+        this._mouseDidDrag = false;
+
+        if (this.isPanning) {
             this.endPan();
+            return;
         }
-    
+
+        // A plain left-click (no drag) keeps its original mode-specific action.
+        // Right-click without a drag does nothing — the contextmenu is already
+        // suppressed.
+        if (wasDrag || button !== 0) return;
+
+        const gridPos = this.screenToGrid(startX, startY);
+        if (!this.isValidGridPosition(gridPos.x, gridPos.y)) return;
+
+        if (this.isColorPickerMode) {
+            this.handlePixelColorPick(gridPos.x, gridPos.y);
+            this.toggleColorPickerMode();
+        } else if (this.isEditMode) {
+            this.placePixel(gridPos.x, gridPos.y);
+        } else {
+            if (this.pixels.has(`${gridPos.x},${gridPos.y}`)) {
+                this.updatePixelInfoPosition(clientX, clientY);
+                this.showPixelInfo(gridPos.x, gridPos.y);
+            } else {
+                this.hidePixelInfo();
+            }
+        }
 };
 
 window.PixelCanvas.prototype.handleMouseLeave = function() {
@@ -70,8 +115,12 @@ window.PixelCanvas.prototype.handleMouseLeave = function() {
         if (this.isPanning) {
             this.endPan();
         }
+        // Cancel any pending mousedown so a release outside the canvas doesn't
+        // get treated as a click when the cursor re-enters.
+        this._mouseDownButton = undefined;
+        this._mouseDidDrag = false;
         if (this.isEditMode) this.render();
-    
+
 };
 
 window.PixelCanvas.prototype.handleWheel = function(e) {
