@@ -16,6 +16,11 @@ interface ExtWebSocket extends WebSocket {
   lastSeen: number;
 }
 
+interface ClientInfo {
+  userId: string | null; // null for guests / not-yet-identified
+  name: string;          // '' for not-yet-identified
+}
+
 @WebSocketGateway({
   cors: true,
   transports: ['websocket', 'polling'],
@@ -31,7 +36,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   @WebSocketServer()
   server: Server;
 
-  private clients: Map<WebSocket, string> = new Map();
+  private clients: Map<WebSocket, ClientInfo> = new Map();
 
   // Fix 16: batch buffer — collect all updates within a single event loop tick
   private pendingUpdates: any[] = [];
@@ -45,7 +50,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     setInterval(() => {
       const now = Date.now();
       let changed = false;
-      this.clients.forEach((_name, ws: ExtWebSocket) => {
+      this.clients.forEach((_info, ws: ExtWebSocket) => {
         if (ws.readyState !== WebSocket.OPEN || (ws.lastSeen && now - ws.lastSeen > 35000)) {
           ws.terminate();
           this.clients.delete(ws);
@@ -86,7 +91,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     const message = JSON.stringify({ type: 'batch_update', updates, deletes });
 
-    this.clients.forEach((_name, client) => {
+    this.clients.forEach((_info, client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
       }
@@ -113,6 +118,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     client.on('error', (e) => this.logger.warn(`WS client error: ${e.message}`));
 
     let initialName = '';
+    let initialUserId: string | null = null;
     const cookieHeader = request?.headers?.cookie || '';
     if (cookieHeader) {
       const token = this.parseCookies(cookieHeader)['access_token'];
@@ -121,6 +127,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
           const payload = this.jwtService.verify(token);
           const user = await this.usersService.findById(payload.sub);
           initialName = user ? user.name : payload.name;
+          initialUserId = payload.sub ?? null;
           this.logger.log(`Authenticated WS client via cookie: ${initialName}`);
         } catch (e) {
           this.logger.warn(`Invalid WS cookie token: ${e.message}`);
@@ -128,7 +135,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       }
     }
 
-    this.clients.set(client, initialName);
+    this.clients.set(client, { userId: initialUserId, name: initialName });
 
     client.on('message', async (raw: Buffer) => {
       try {
@@ -140,17 +147,18 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
               const user = await this.usersService.findById(payload.sub);
               const verified = user ? user.name : (payload.name || msg.name?.trim().slice(0, 40) || 'User');
               this.logger.log(`Authenticated WS client via identify token: ${verified}`);
-              this.clients.set(client, verified);
+              this.clients.set(client, { userId: payload.sub ?? null, name: verified });
               this.broadcastUserCount();
               return;
             } catch {
               // token invalid — fall through
             }
           }
-          if (initialName) { this.broadcastUserCount(); return; }
+          // Cookie already authed us — re-broadcast without downgrading to guest.
+          if (initialUserId) { this.broadcastUserCount(); return; }
           const name = `${msg.name?.trim().slice(0, 40) || 'Guest'} (Guest)`;
           this.logger.log(`Guest identified: ${name}`);
-          this.clients.set(client, name);
+          this.clients.set(client, { userId: null, name });
           this.broadcastUserCount();
         } else if (msg?.type === 'ping') {
           client.lastSeen = Date.now();
@@ -170,20 +178,34 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   private broadcastUserCount() {
-    // Deduplicate named users so multi-tab/multi-device same user counts once.
-    // Anonymous sockets (pre-identify, or never identified) each count as one
-    // separate presence so a lone visitor isn't shown as "0 online".
-    const allValues = Array.from(this.clients.values());
-    const names = Array.from(
-      new Set(allValues.filter((n) => n?.length > 0)),
-    ).sort((a, b) => a.localeCompare(b));
-    const anonCount = allValues.filter((n) => !n?.length).length;
+    // Dedup logged-in users by userId (robust against name changes mid-session
+    // and against one tab still pre-identify while another is named).
+    // Guests dedup by name (same browser → same Guest_xyz across tabs).
+    // Anonymous sockets (pre-identify) each count as 1 so a lone visitor
+    // never sees "0 online".
+    const seenUserIds = new Set<string>();
+    const namesSet = new Set<string>();
+    let anonCount = 0;
+
+    this.clients.forEach((info) => {
+      if (info.userId) {
+        if (seenUserIds.has(info.userId)) return;
+        seenUserIds.add(info.userId);
+        if (info.name) namesSet.add(info.name);
+      } else if (info.name) {
+        namesSet.add(info.name);
+      } else {
+        anonCount++;
+      }
+    });
+
+    const names = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
     const message = JSON.stringify({
       type: 'user_count',
       count: names.length + anonCount,
       names,
     });
-    this.clients.forEach((_name, client) => {
+    this.clients.forEach((_info, client) => {
       if (client.readyState === WebSocket.OPEN) client.send(message);
     });
   }

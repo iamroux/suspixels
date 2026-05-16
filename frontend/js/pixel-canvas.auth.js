@@ -161,7 +161,11 @@ window.PixelCanvas.prototype.initProfilePage = function() {
                 
                 localStorage.setItem('pixelUser', JSON.stringify(updatedUser)); // non-sensitive user info only
                 this.userName = updatedUser.name;
-                
+
+                // Tell the server about the new name so the online list / dedup
+                // reflects it without waiting for a reconnect.
+                this.sendIdentify();
+
                 // Update header UI
                 this.updateAuthUI();
                 
@@ -439,12 +443,16 @@ window.PixelCanvas.prototype.refreshSession = async function() {
             });
             if (response.ok) {
                 const data = await response.json();
+                const nameChanged = this.userName !== data.name;
                 this.user.avatarStyle = data.avatarStyle || 'bottts';
                 this.user.pixelCount = data.pixelCount || 0;
                 this.user.name = data.name;
                 localStorage.setItem('pixelUser', JSON.stringify(this.user));
                 this.userName = data.name;
                 this.updateAuthUI();
+                // If the name resolved late (e.g. ws opened before we had it,
+                // or another tab renamed us), push it to the gateway now.
+                if (nameChanged) this.sendIdentify();
             }
         } catch (e) {
             console.warn('Silent session refresh failed', e);
