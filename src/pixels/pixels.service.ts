@@ -25,8 +25,8 @@ export type CompactPixel = [number, number, string];
 export class PixelsService {
   private readonly logger = new Logger(PixelsService.name);
   private readonly PIXEL_BUFFER_KEY = 'pixel_buffer';
-  private readonly PIXEL_GRID_KEY = 'pixel_grid';
   private readonly LEADERBOARD_KEY = 'leaderboard';
+  private readonly PIXEL_INFO_TTL = 3600; // 1 hour — invalidated on pixel update/delete
   private readonly BATCH_SIZE = 100;
   private readonly BUFFER_TTL = 300;
   private readonly LEADERBOARD_TTL = 3600;
@@ -61,13 +61,6 @@ export class PixelsService {
     pixels.forEach((p) => { this.pixelMap[`${p.x},${p.y}`] = p.color; });
     this.logger.log(`Loaded ${pixels.length} pixels into in-process map`);
 
-    // Sync to Redis pixel_grid in background — non-blocking, non-critical
-    const snapshot = { ...this.pixelMap };
-    this.redisClient.del(this.PIXEL_GRID_KEY)
-      .then(() => Object.keys(snapshot).length > 0
-        ? this.redisClient.hset(this.PIXEL_GRID_KEY, snapshot)
-        : null)
-      .catch((e) => this.logger.warn(`Redis pixel_grid sync failed (non-critical): ${e.message}`));
   }
 
   // Served directly from in-process map — no Redis read
@@ -103,17 +96,30 @@ export class PixelsService {
       JSON.stringify(pendingPixel),
     );
 
-    // Update pixel_grid in Redis best-effort (non-blocking)
-    this.redisClient.hset(this.PIXEL_GRID_KEY, `${x},${y}`, color).catch(() => {});
 
+    this.invalidatePixelInfo(x, y);
     const responseDto: PixelResponseDto = { x, y, color, insertedBy: userName, userId, updatedAt: new Date() };
     this.eventEmitter.emit('pixel.updated', responseDto);
     return responseDto;
   }
 
   async getPixelMetadata(x: number, y: number): Promise<PixelResponseDto | null> {
+    const cacheKey = `pixel:info:${x},${y}`;
+    try {
+      const cached = await this.redisClient.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+
     const pixel = await this.pixelRepository.findOne({ where: { x, y }, relations: ['updatedBy'] });
-    return pixel ? this.toResponseDto(pixel) : null;
+    if (!pixel) return null;
+
+    const dto = this.toResponseDto(pixel);
+    this.redisClient.setex(cacheKey, this.PIXEL_INFO_TTL, JSON.stringify(dto)).catch(() => {});
+    return dto;
+  }
+
+  private invalidatePixelInfo(x: number, y: number) {
+    this.redisClient.del(`pixel:info:${x},${y}`).catch(() => {});
   }
 
   async deletePixel(deletePixelDto: DeletePixelDto): Promise<{ x: number; y: number }> {
@@ -126,8 +132,6 @@ export class PixelsService {
     // Remove pending buffer entry so cron doesn't re-insert it
     await this.redisClient.del(`${this.PIXEL_BUFFER_KEY}:${x},${y}`).catch(() => {});
 
-    // Update pixel_grid in Redis best-effort
-    this.redisClient.hdel(this.PIXEL_GRID_KEY, `${x},${y}`).catch(() => {});
 
     // Authoritative DB delete
     await this.pixelRepository
@@ -138,6 +142,7 @@ export class PixelsService {
       .returning(['x', 'y'])
       .execute();
 
+    this.invalidatePixelInfo(x, y);
     this.eventEmitter.emit('pixel.deleted', { x, y });
     return { x, y };
   }
