@@ -44,151 +44,35 @@
 .tool-section {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    flex-wrap: nowrap;
+    gap: 0.625rem;
+    flex-wrap: wrap;
 }
 
-/* ----- mode toggle (primary CTA, left side of toolbar) -----
-   color-coded: mint = explore, peach = edit. always visible,
-   always loud — it's THE entry point to editing. */
+/* ----- floating apply / discard bar ----- */
 
-.mode-toggle-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.mode-toggle-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.55rem 1.1rem;
-    border: none;
-    border-radius: var(--radius-full);
-    font-family: var(--font-display);
-    font-size: 0.92rem;
-    font-weight: 600;
-    cursor: pointer;
-    color: var(--text-on-primary);
-    background: linear-gradient(180deg, var(--mint-400), var(--mint-500));
-    box-shadow:
-        var(--shadow-md),
-        var(--inset-highlight),
-        0 0 0 0 rgba(78, 205, 196, 0);
-    transition:
-        transform var(--transition-fast) var(--spring),
-        box-shadow var(--transition-normal) var(--smooth),
-        background var(--transition-normal) var(--smooth);
-    white-space: nowrap;
-    will-change: transform;
-}
-
-.mode-toggle-btn:hover {
-    transform: translateY(-2px) scale(1.04);
-    box-shadow:
-        var(--shadow-lg),
-        var(--inset-highlight),
-        var(--glow-mint);
-}
-
-.mode-toggle-btn:active {
-    transform: translateY(0) scale(0.96);
-}
-
-.mode-toggle-btn.edit-mode {
-    background: linear-gradient(180deg, var(--peach-400), var(--peach-500));
-    /* subtle breath so the active state feels live */
-    animation: mode-breath 2.6s ease-in-out infinite;
-}
-
-.mode-toggle-btn.edit-mode:hover {
-    box-shadow:
-        var(--shadow-lg),
-        var(--inset-highlight),
-        var(--glow-peach);
-}
-
-@keyframes mode-breath {
-    0%, 100% { box-shadow: var(--shadow-md), var(--inset-highlight), 0 0 0 0  rgba(255, 124, 102, 0.4); }
-    50%      { box-shadow: var(--shadow-md), var(--inset-highlight), 0 0 0 6px rgba(255, 124, 102, 0); }
-}
-
-/* "Login to enable editing" tooltip — anchors to the mode toggle now
-   that it lives in the toolbar. Points upward instead of down. */
-.edit-locked-message {
-    position: absolute;
-    bottom: calc(100% + 0.5rem);
-    left: 0;
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--peach-700);
-    background: var(--peach-100);
-    border: 1.5px dashed var(--peach-300);
-    padding: 0.3rem 0.625rem;
-    border-radius: var(--radius-md);
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(4px);
-    transition:
-        opacity var(--transition-normal) var(--smooth),
-        transform var(--transition-normal) var(--spring);
-}
-
-.edit-locked-message.visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* ----- vertical divider between toolbar sections ----- */
-
-.toolbar-divider {
-    width: 1.5px;
-    height: 28px;
-    background: var(--border-medium);
-    border-radius: var(--radius-full);
-    flex-shrink: 0;
-    opacity: 0.6;
-}
-
-/* ----- canvas stats overlay (zoom + coordinates) -----
-   small floating pills in top-left of canvas, replaces the in-header
-   stats. semi-transparent so they don't distract. */
-
-.canvas-stats-overlay {
+.floating-action-bar {
     position: fixed;
-    top: 78px;
-    left: 14px;
-    z-index: 25;
+    bottom: 96px;
+    right: 22px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    pointer-events: none;
-}
-
-.canvas-stat {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.3rem 0.625rem;
-    background: var(--glass-bg);
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    gap: 0.625rem;
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    padding: 0.625rem;
+    border-radius: var(--radius-xl);
     border: 1.5px solid rgba(255, 255, 255, 0.7);
-    border-radius: var(--radius-full);
-    box-shadow: var(--shadow-sm);
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    width: max-content;
+    box-shadow: var(--shadow-xl), var(--inset-highlight);
+    z-index: 65;
     pointer-events: auto;
+    animation: bounce-in 0.42s var(--spring);
 }
 
-.canvas-stat i {
-    font-size: 0.7rem;
-    color: var(--lavender-500);
+@keyframes bounce-in {
+    0%   { transform: scale(0.6) translateY(20px); opacity: 0; }
+    60%  { transform: scale(1.06) translateY(-3px); opacity: 1; }
+    100% { transform: scale(1) translateY(0); }
 }
 
 /* ----- tool buttons (eraser, color pick, palettes, etc) ----- */
@@ -320,12 +204,26 @@
     transform: scale(1.12) rotate(-6deg);
 }
 
-/* ----- edit-mode actions (right end of toolbar in edit mode) ----- */
+/* ----- edit-mode extras (continuous draw, pending count, undo) ----- */
 
 .edit-mode-actions {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.625rem;
+    margin-left: 0.5rem;
+    padding-left: 0.625rem;
+    border-left: 1.5px dashed var(--border-medium);
+}
+
+.pending-changes-info {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--peach-700);
+    background: var(--peach-100);
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--peach-200);
 }
 
 /* ----- action buttons (apply / discard / undo) ----- */
@@ -348,7 +246,6 @@
         background var(--transition-normal) var(--smooth);
     box-shadow: var(--shadow-md), var(--inset-highlight);
     will-change: transform;
-    position: relative;
 }
 
 .action-btn:hover:not(:disabled) {
@@ -390,41 +287,6 @@
 
 .discard-btn:hover:not(:disabled) {
     box-shadow: var(--shadow-lg), var(--inset-highlight), var(--glow-peach);
-}
-
-/* undo — quieter neutral pill (the rare case), icon-only on desktop too */
-.undo-btn {
-    background: var(--cream-200);
-    color: var(--text-secondary);
-    padding: 0.55rem 0.7rem;
-}
-
-.undo-btn:hover:not(:disabled) {
-    background: var(--lavender-200);
-    color: var(--lavender-600);
-}
-
-/* pending-count badge sits on the right end of the Apply button */
-.pending-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.35rem;
-    height: 1.35rem;
-    padding: 0 0.4rem;
-    margin-left: 0.15rem;
-    background: rgba(255, 255, 255, 0.28);
-    border: 1.5px solid rgba(255, 255, 255, 0.55);
-    border-radius: var(--radius-full);
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--text-on-primary);
-    font-variant-numeric: tabular-nums;
-}
-
-.pending-badge[hidden] {
-    display: none;
 }
 
 /* ----- canvas container ----- */

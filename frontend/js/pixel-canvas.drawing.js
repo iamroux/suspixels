@@ -12,43 +12,49 @@ window.PixelCanvas.prototype.toggleEditMode = function() {
         const editActions = document.getElementById('edit-mode-actions');
         const toolButtons = document.querySelectorAll('.tool-btn');
 
-        const enterEdit = () => {
+        if (this.isEditMode) {
             modeBtn.classList.remove('explore-mode');
             modeBtn.classList.add('edit-mode');
-            modeBtn.querySelector('i').className = 'fas fa-paint-brush';
-            modeBtn.querySelector('span').textContent = 'Edit';
+            modeBtn.querySelector('i').className = 'fas fa-edit';
+            modeBtn.querySelector('span').textContent = 'Edit Mode';
             editActions.style.display = 'flex';
+            document.getElementById('floating-action-bar').style.display = 'flex';
+            
+            // Enable tool buttons
             toolButtons.forEach(btn => {
                 if (btn.id !== 'my-palettes-btn') btn.removeAttribute('disabled');
             });
-        };
-
-        const enterExplore = () => {
+        } else {
             modeBtn.classList.remove('edit-mode');
             modeBtn.classList.add('explore-mode');
             modeBtn.querySelector('i').className = 'fas fa-eye';
-            modeBtn.querySelector('span').textContent = 'Explore';
+            modeBtn.querySelector('span').textContent = 'Explore Mode';
             editActions.style.display = 'none';
+            document.getElementById('floating-action-bar').style.display = 'none';
+            
+            // Disable tool buttons
             toolButtons.forEach(btn => {
                 if (btn.id !== 'my-palettes-btn') btn.setAttribute('disabled', 'true');
             });
-        };
-
-        if (this.isEditMode) {
-            enterEdit();
-        } else {
-            enterExplore();
-            // Confirm before tossing unsaved work
+            
+            // Clear any pending changes when exiting edit mode
             if (this.pendingChanges.size > 0) {
                 const confirmed = confirm('You have unsaved changes. Do you want to discard them?');
                 if (!confirmed) {
+                    // Revert back to edit mode
                     this.isEditMode = true;
-                    enterEdit();
+                    modeBtn.classList.remove('explore-mode');
+                    modeBtn.classList.add('edit-mode');
+                    modeBtn.querySelector('i').className = 'fas fa-edit';
+                    modeBtn.querySelector('span').textContent = 'Edit Mode';
+                    editActions.style.display = 'flex';
+                    toolButtons.forEach(btn => btn.removeAttribute('disabled'));
                     return;
                 }
                 this.discardPendingChanges();
             }
         }
+    
 };
 
 window.PixelCanvas.prototype.placePixel = async function(x, y) {
@@ -98,23 +104,23 @@ window.PixelCanvas.prototype.placeSinglePixel = function(x, y) {
 
 window.PixelCanvas.prototype.updatePendingChangesCount = function() {
         const count = this.pendingChanges.size;
-        // Pending count is now a small badge inside the apply button,
-        // not a separate pill. Hide the badge entirely when there's nothing
-        // to apply so the button reads cleanly as just "Apply".
-        const badge = document.getElementById('pending-count');
-        if (badge) {
-            badge.textContent = count > 99 ? '99+' : String(count);
-            badge.hidden = count === 0;
-        }
-
+        const countElement = document.getElementById('pending-count');
+        countElement.textContent = count === 1 ? '1 change' : `${count} changes`;
+        
+        // Enable/disable apply, discard, and undo buttons based on pending changes
         const applyBtn = document.getElementById('apply-changes-btn');
         const discardBtn = document.getElementById('discard-changes-btn');
         const undoBtn = document.getElementById('undo-btn');
         applyBtn.disabled = count === 0;
         discardBtn.disabled = count === 0;
         undoBtn.disabled = count === 0;
-
-        applyBtn.classList.toggle('glow', count > 0);
+        
+        if (count > 0) {
+            applyBtn.classList.add('glow');
+        } else {
+            applyBtn.classList.remove('glow');
+        }
+    
 };
 
 window.PixelCanvas.prototype.undoPendingChange = function() {
@@ -176,7 +182,7 @@ window.PixelCanvas.prototype.applyPendingChanges = async function() {
                 if (status === 401) {
                     this.user = null;
                     localStorage.removeItem('pixelUser');
-                    applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span><span class="pending-badge" id="pending-count" aria-label="pending changes" hidden>0</span>';
+                    applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span>';
                     applyBtn.disabled = false;
                     this.updateAuthUI();
                     this.initAuthModal();
@@ -197,11 +203,11 @@ window.PixelCanvas.prototype.applyPendingChanges = async function() {
 
             applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Applied!</span>';
             setTimeout(() => {
-                applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span><span class="pending-badge" id="pending-count" aria-label="pending changes" hidden>0</span>';
+                applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span>';
             }, 2000);
         } catch (error) {
             console.error('Failed to apply changes:', error);
-            applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span><span class="pending-badge" id="pending-count" aria-label="pending changes" hidden>0</span>';
+            applyBtn.innerHTML = '<i class="fas fa-check"></i><span>Apply</span>';
             applyBtn.disabled = false;
         }
     
