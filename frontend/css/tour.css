@@ -1,59 +1,62 @@
-/* =============================================
-   Onboarding Quick Tour
-   Spotlight: box-shadow cutout technique
-   Tooltip: glassmorphism card matching app theme
-   ============================================= */
+/* =========================================================
+   onboarding tour
+   spotlight: lavender-tinted dim cutout (gentler than black)
+   tooltip  : white kawaii card with spring-in
+   ========================================================= */
 
-/* ── Spotlight ── */
+/* ----- spotlight ----- */
+
 .tour-spotlight {
     position: fixed;
     top: 0;
     left: 0;
     width: 0;
     height: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
     z-index: 9000;
     pointer-events: none;
-
-    /* The giant spread is the dim overlay — the element itself stays clear */
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.78);
-
-    /* Smooth slide between steps */
+    /* lavender-tinted dim, softer than pure black */
+    box-shadow: 0 0 0 9999px rgba(45, 34, 54, 0.62);
     transition:
-        top 320ms cubic-bezier(0.4, 0, 0.2, 1),
-        left 320ms cubic-bezier(0.4, 0, 0.2, 1),
-        width 320ms cubic-bezier(0.4, 0, 0.2, 1),
-        height 320ms cubic-bezier(0.4, 0, 0.2, 1),
-        border-radius 320ms ease;
-
-    animation: tourSpotlightFadeIn 400ms ease both;
+        top    320ms var(--smooth),
+        left   320ms var(--smooth),
+        width  320ms var(--smooth),
+        height 320ms var(--smooth),
+        border-radius 320ms var(--smooth);
+    animation: tour-spotlight-in 400ms var(--smooth) both;
 }
 
-/* ── Tooltip card ── */
+@keyframes tour-spotlight-in {
+    from { box-shadow: 0 0 0 9999px rgba(45, 34, 54, 0); }
+    to   { box-shadow: 0 0 0 9999px rgba(45, 34, 54, 0.62); }
+}
+
+/* ----- tooltip card ----- */
+
 .tour-tooltip {
     position: fixed;
     z-index: 9100;
-    width: 300px;
+    width: 320px;
     max-width: calc(100vw - 2rem);
-
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(24px) saturate(1.6);
-    -webkit-backdrop-filter: blur(24px) saturate(1.6);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 16px;
+    background: var(--bg-secondary);
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-xl);
     padding: 1.25rem;
-    box-shadow:
-        0 24px 48px rgba(0, 0, 0, 0.45),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-
-    animation: tourTooltipSlideIn 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    box-shadow: var(--shadow-xl), var(--inset-highlight);
+    animation: tour-tooltip-in 320ms var(--spring) both;
 }
 
 .tour-tooltip.tour-tooltip-reposition {
-    animation: tourTooltipSlideIn 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation: tour-tooltip-in 220ms var(--spring) both;
 }
 
-/* ── Tooltip inner layout ── */
+@keyframes tour-tooltip-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* ----- inner layout ----- */
+
 .tour-tooltip-header {
     display: flex;
     align-items: flex-start;
@@ -63,39 +66,43 @@
 }
 
 .tour-tooltip-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #f8fafc;
-    line-height: 1.4;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.35;
     flex: 1;
 }
 
 .tour-step-counter {
     flex-shrink: 0;
-    background: rgba(14, 165, 233, 0.18);
-    border: 1px solid rgba(14, 165, 233, 0.3);
-    color: #38bdf8;
+    background: linear-gradient(135deg, var(--mint-300), var(--mint-500));
+    color: var(--text-on-primary);
+    font-family: var(--font-display);
     font-size: 0.7rem;
     font-weight: 600;
-    letter-spacing: 0.03em;
-    padding: 0.2rem 0.55rem;
-    border-radius: 9999px;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
     white-space: nowrap;
+    box-shadow: var(--shadow-sm), var(--inset-highlight);
 }
 
 .tour-tooltip-body {
-    font-size: 0.82rem;
-    color: #94a3b8;
-    line-height: 1.6;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
     margin-bottom: 1.1rem;
+    font-weight: 500;
 }
 
 .tour-tooltip-body strong {
-    color: #cbd5e1;
-    font-weight: 600;
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
-/* ── Action buttons ── */
+/* ----- actions ----- */
+
 .tour-actions {
     display: flex;
     align-items: center;
@@ -105,82 +112,94 @@
 
 .tour-btn-skip {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #64748b;
-    font-size: 0.78rem;
-    font-weight: 500;
-    padding: 0.45rem 0.9rem;
-    border-radius: 8px;
+    border: 1.5px solid var(--border-medium);
+    color: var(--text-tertiary);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.5rem 0.95rem;
+    border-radius: var(--radius-full);
     cursor: pointer;
-    transition: color 150ms, border-color 150ms, background 150ms;
-    font-family: inherit;
+    transition:
+        color var(--transition-fast) var(--smooth),
+        border-color var(--transition-fast) var(--smooth),
+        background var(--transition-fast) var(--smooth);
 }
 
 .tour-btn-skip:hover {
-    color: #94a3b8;
-    border-color: rgba(255, 255, 255, 0.22);
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    border-color: var(--border-dark);
+    background: var(--cream-100);
 }
 
 .tour-btn-next {
-    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    background: linear-gradient(180deg, var(--peach-400), var(--peach-500));
     border: none;
-    color: #fff;
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 0.5rem 1.1rem;
-    border-radius: 8px;
+    color: var(--text-on-primary);
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 700;
+    padding: 0.55rem 1.15rem;
+    border-radius: var(--radius-full);
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    transition: opacity 150ms, transform 100ms;
-    font-family: inherit;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
+    transition:
+        transform var(--transition-fast) var(--spring),
+        box-shadow var(--transition-normal) var(--smooth);
+    box-shadow: var(--shadow-md), var(--inset-highlight);
 }
 
 .tour-btn-next:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: var(--shadow-lg), var(--inset-highlight), var(--glow-peach);
 }
 
 .tour-btn-next:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.97);
 }
 
-/* ── Progress dots ── */
+/* ----- progress dots ----- */
+
 .tour-progress-dots {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
 }
 
 .tour-dot {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    transition: background 250ms, transform 250ms;
+    background: var(--cream-300);
+    transition:
+        background var(--transition-normal) var(--smooth),
+        transform var(--transition-normal) var(--spring),
+        width var(--transition-normal) var(--smooth);
 }
 
 .tour-dot.active {
-    background: #0ea5e9;
-    transform: scale(1.35);
+    background: var(--peach-500);
+    transform: scale(1);
+    width: 16px;
+    border-radius: var(--radius-full);
 }
 
-/* ── Arrow ── */
+/* ----- arrow (points at the spotlighted element) ----- */
+
 .tour-arrow {
     position: absolute;
     width: 0;
     height: 0;
-    border: 7px solid transparent;
+    border: 8px solid transparent;
 }
 
 .tour-arrow.arrow-top {
-    top: -14px;
+    top: -16px;
     left: 50%;
     transform: translateX(-50%);
-    border-bottom-color: rgba(255, 255, 255, 0.14);
+    border-bottom-color: rgba(255, 255, 255, 0.9);
 }
 
 .tour-arrow.arrow-top::after {
@@ -188,17 +207,17 @@
     position: absolute;
     width: 0;
     height: 0;
-    border: 6px solid transparent;
-    border-bottom-color: rgba(15, 23, 42, 0.9);
+    border: 7px solid transparent;
+    border-bottom-color: var(--bg-secondary);
     top: -5px;
-    left: -6px;
+    left: -7px;
 }
 
 .tour-arrow.arrow-bottom {
-    bottom: -14px;
+    bottom: -16px;
     left: 50%;
     transform: translateX(-50%);
-    border-top-color: rgba(255, 255, 255, 0.14);
+    border-top-color: rgba(255, 255, 255, 0.9);
 }
 
 .tour-arrow.arrow-bottom::after {
@@ -206,30 +225,14 @@
     position: absolute;
     width: 0;
     height: 0;
-    border: 6px solid transparent;
-    border-top-color: rgba(15, 23, 42, 0.9);
+    border: 7px solid transparent;
+    border-top-color: var(--bg-secondary);
     bottom: -5px;
-    left: -6px;
+    left: -7px;
 }
 
-/* ── Animations ── */
-@keyframes tourSpotlightFadeIn {
-    from { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0); }
-    to   { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.78); }
-}
+/* ----- mobile ----- */
 
-@keyframes tourTooltipSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px) scale(0.97);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* ── Mobile ── */
 @media (max-width: 600px) {
     .tour-tooltip {
         width: calc(100vw - 2rem);

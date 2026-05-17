@@ -1,4 +1,9 @@
-/* Main Content */
+/* =========================================================
+   canvas + toolbar
+   header-icon-btn / mode-toggle-btn live in header.css — do
+   not redefine here.
+   ========================================================= */
+
 .main-content {
     position: absolute;
     top: 0;
@@ -8,137 +13,248 @@
     z-index: 1;
 }
 
-/* Toolbar Styles */
+/* ----- floating bottom toolbar (pill) ----- */
+
 .toolbar {
     position: fixed;
-    top: auto;
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%) translateZ(0);
     -webkit-transform: translateX(-50%) translateZ(0);
-    padding: 0.75rem 1.25rem;
+    padding: 0.75rem 1.125rem;
     background-color: var(--glass-bg);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
     display: flex;
-    flex-direction: row;
     align-items: center;
-    gap: 0.75rem;
-    border: 1px solid var(--border-medium);
+    gap: 0.625rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
     border-radius: var(--radius-full);
-    box-shadow: var(--shadow-xl);
+    box-shadow:
+        var(--shadow-xl),
+        var(--inset-highlight);
     z-index: 60;
     pointer-events: auto;
     width: max-content;
-    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.floating-action-bar {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    background-color: var(--glass-bg);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    padding: 0.5rem;
-    border-radius: 16px;
-    border: 1px solid var(--border-medium);
-    box-shadow: var(--shadow-xl);
-    z-index: 65;
-    pointer-events: auto;
-    animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes bounceIn {
-    0% { transform: scale(0.8); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+    transition:
+        transform var(--transition-normal) var(--spring),
+        box-shadow var(--transition-normal) var(--smooth);
 }
 
 .tool-section {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.625rem;
     flex-wrap: wrap;
 }
 
-.mode-toggle-container {
+/* ----- floating apply / discard bar ----- */
+
+.floating-action-bar {
+    position: fixed;
+    bottom: 96px;
+    right: 22px;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.625rem;
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    padding: 0.625rem;
+    border-radius: var(--radius-xl);
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    box-shadow: var(--shadow-xl), var(--inset-highlight);
+    z-index: 65;
+    pointer-events: auto;
+    animation: bounce-in 0.42s var(--spring);
 }
 
-.mode-toggle-btn {
-    background-color: var(--primary-600);
-    color: var(--text-on-primary);
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-md);
+@keyframes bounce-in {
+    0%   { transform: scale(0.6) translateY(20px); opacity: 0; }
+    60%  { transform: scale(1.06) translateY(-3px); opacity: 1; }
+    100% { transform: scale(1) translateY(0); }
+}
+
+/* ----- tool buttons (eraser, color pick, palettes, etc) ----- */
+
+.tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1.5px solid var(--border-light);
+    padding: 0.5rem 0.875rem;
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 700;
     cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 600;
-    transition: all var(--transition-fast) ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    transition:
+        transform var(--transition-fast) var(--spring),
+        background var(--transition-normal) var(--smooth),
+        color var(--transition-normal) var(--smooth),
+        border-color var(--transition-normal) var(--smooth),
+        box-shadow var(--transition-normal) var(--smooth);
+    box-shadow: var(--shadow-sm);
+    will-change: transform;
 }
 
-.mode-toggle-btn:hover {
-    transform: translateY(-1px);
+.tool-btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.04);
+    background: var(--lavender-100);
+    border-color: var(--lavender-300);
+    color: var(--lavender-600);
     box-shadow: var(--shadow-md);
 }
 
-.mode-toggle-btn.explore-mode {
-    background-color: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+.tool-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
 }
 
-.mode-toggle-btn.explore-mode:hover {
-    background-color: rgba(255, 255, 255, 0.18);
-    border-color: rgba(255, 255, 255, 0.25);
+.tool-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
-.mode-toggle-btn.edit-mode {
-    background-color: #10b981;
+.tool-btn.active {
+    background: linear-gradient(180deg, var(--lavender-400), var(--lavender-500));
+    color: var(--text-on-primary);
+    border-color: transparent;
+    box-shadow: var(--shadow-md), var(--glow-lavender), var(--inset-highlight);
 }
 
-.mode-toggle-btn.edit-mode:hover {
-    background-color: #059669;
+.tool-btn i {
+    font-size: 0.85rem;
 }
+
+/* ----- brush size picker (1x1 / 2x2 / 3x3) ----- */
+
+.brush-size-picker {
+    display: inline-flex;
+    align-items: center;
+    background: var(--cream-100);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    border: 1.5px solid var(--border-light);
+}
+
+.size-btn {
+    width: 1.95rem;
+    height: 1.95rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition:
+        background var(--transition-fast) var(--smooth),
+        color var(--transition-fast) var(--smooth),
+        transform var(--transition-fast) var(--spring);
+}
+
+.size-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transform: scale(1.08);
+}
+
+.size-btn.active {
+    background: linear-gradient(180deg, var(--peach-400), var(--peach-500));
+    color: var(--text-on-primary);
+    box-shadow: var(--shadow-sm), var(--inset-highlight);
+}
+
+/* ----- selected color chip ----- */
+
+.selected-color-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.625rem 0.25rem 0.75rem;
+    background: var(--cream-100);
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--border-light);
+}
+
+.color-label {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+#selected-color {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: var(--radius-full);
+    border: 2.5px solid #fff;
+    box-shadow:
+        var(--shadow-sm),
+        0 0 0 1.5px var(--border-medium);
+    transition: transform var(--transition-fast) var(--spring);
+}
+
+#selected-color:hover {
+    transform: scale(1.12) rotate(-6deg);
+}
+
+/* ----- edit-mode extras (continuous draw, pending count, undo) ----- */
 
 .edit-mode-actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-left: auto;
-    padding-left: 1rem;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 0.625rem;
+    margin-left: 0.5rem;
+    padding-left: 0.625rem;
+    border-left: 1.5px dashed var(--border-medium);
 }
 
 .pending-changes-info {
-    font-size: 0.875rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--primary-300);
+    color: var(--peach-700);
+    background: var(--peach-100);
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--peach-200);
 }
+
+/* ----- action buttons (apply / discard / undo) ----- */
 
 .action-btn {
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all var(--transition-fast) ease;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    color: white;
+    gap: 0.4rem;
+    border: none;
+    padding: 0.55rem 1rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-on-primary);
+    transition:
+        transform var(--transition-fast) var(--spring),
+        box-shadow var(--transition-normal) var(--smooth),
+        background var(--transition-normal) var(--smooth);
+    box-shadow: var(--shadow-md), var(--inset-highlight);
+    will-change: transform;
 }
 
-.action-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+.action-btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: var(--shadow-lg), var(--inset-highlight);
+}
+
+.action-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
 }
 
 .action-btn:disabled {
@@ -148,103 +264,43 @@
 }
 
 .apply-btn {
-    background-color: #10b981;
-}
-
-.apply-btn.glow {
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
-    animation: pulseGlow 2s infinite;
-}
-
-@keyframes pulseGlow {
-    0% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-    50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.8); }
-    100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+    background: linear-gradient(180deg, var(--mint-400), var(--mint-500));
 }
 
 .apply-btn:hover:not(:disabled) {
-    background-color: #059669;
+    box-shadow: var(--shadow-lg), var(--inset-highlight), var(--glow-mint);
+}
+
+/* breathing glow when there are pending changes worth saving */
+.apply-btn.glow {
+    animation: glow-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+    0%, 100% { box-shadow: var(--shadow-md), var(--inset-highlight), 0 0 0 0 rgba(78, 205, 196, 0.5); }
+    50%      { box-shadow: var(--shadow-lg), var(--inset-highlight), 0 0 0 10px rgba(78, 205, 196, 0); }
 }
 
 .discard-btn {
-    background-color: #ef4444;
+    background: linear-gradient(180deg, var(--peach-400), var(--peach-500));
 }
 
 .discard-btn:hover:not(:disabled) {
-    background-color: #dc2626;
+    box-shadow: var(--shadow-lg), var(--inset-highlight), var(--glow-peach);
 }
 
-.tool-btn {
-    background-color: var(--primary-600);
-    color: var(--text-on-primary);
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all var(--transition-fast) ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
+/* ----- canvas container ----- */
 
-.tool-btn:hover {
-    background-color: var(--primary-700);
-    transform: translateY(-1px);
-}
-
-.tool-btn:active {
-    transform: translateY(0);
-}
-
-.tool-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.tool-btn.active {
-    background-color: var(--primary-500);
-    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.45);
-}
-
-.tool-btn i {
-    font-size: 0.875rem;
-}
-
-.selected-color-display {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-left: auto;
-}
-
-.color-label {
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.55);
-}
-
-#selected-color {
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: var(--shadow-sm);
-    transition: transform var(--transition-fast) ease;
-}
-
-#selected-color:hover {
-    transform: scale(1.05);
-}
-
-/* Canvas Container */
 .canvas-container {
     position: absolute;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: #e5e5e5;
+    /* let the body gradient show through; the canvas sits on top.
+       a subtle warm wash so the canvas edges don't look bare. */
+    background:
+        radial-gradient(120% 80% at 50% 50%, rgba(255, 250, 245, 0.4), transparent 70%);
     z-index: 10;
 }
 
@@ -256,6 +312,10 @@
     cursor: crosshair;
 }
 
+.canvas-container.panning #pixel-canvas {
+    cursor: grabbing;
+}
+
 .canvas-overlay {
     position: absolute;
     top: 0;
@@ -264,31 +324,4 @@
     height: 100%;
     pointer-events: none;
     z-index: 20;
-}
-
-/* Leaderboard header button — amber/gold */
-.header-icon-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    padding: 0.375rem 0.75rem;
-    border-radius: var(--radius-md);
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #fbbf24;
-    cursor: pointer;
-    transition: all var(--transition-fast) ease;
-    white-space: nowrap;
-}
-
-.header-icon-btn:hover {
-    background-color: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.55);
-    color: #fde68a;
-}
-
-.header-icon-btn i {
-    font-size: 0.8rem;
 }

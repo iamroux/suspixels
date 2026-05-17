@@ -1,64 +1,150 @@
+/* =========================================================
+   sus pixels — kawaii pastel design tokens
+   palette: peach (primary), mint (accent), lavender (accent),
+            butter (highlight), pink (love), warm cream neutrals
+   motion : open-props easings + custom springs
+   shape  : chunky radii, soft puffy shadows
+   ========================================================= */
+
 :root {
-    /* Primary colors */
-    --primary-50: #f0f9ff;
-    --primary-100: #e0f2fe;
-    --primary-200: #bae6fd;
-    --primary-300: #7dd3fc;
-    --primary-400: #38bdf8;
-    --primary-500: #0ea5e9;
-    --primary-600: #0284c7;
-    --primary-700: #0369a1;
-    --primary-800: #075985;
-    --primary-900: #0c4a6e;
-    
-    /* Grayscale */
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-400: #9ca3af;
-    --gray-500: #6b7280;
-    --gray-600: #4b5563;
-    --gray-700: #374151;
-    --gray-800: #1f2937;
-    --gray-900: #111827;
-    
-    /* Backgrounds - Liquid Glass Dark */
-    --bg-primary: #0f172a;
-    --bg-secondary: rgba(30, 41, 59, 0.75);
-    --bg-tertiary: rgba(51, 65, 85, 0.5);
-    --glass-bg: rgba(15, 23, 42, 0.7);
-    --glass-bg-light: rgba(255, 255, 255, 0.08);
-    
-    /* Text */
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-tertiary: #94a3b8;
+    /* ---------- raw pastel ramps ---------- */
+    /* peach — primary action */
+    --peach-100: #ffe5dd;
+    --peach-200: #ffcec0;
+    --peach-300: #ffb4a2;
+    --peach-400: #ff9684;
+    --peach-500: #ff7c66;
+    --peach-600: #e76f51;
+    --peach-700: #c2543c;
+
+    /* mint — success / fresh accent */
+    --mint-100: #e0f7ee;
+    --mint-200: #c3efdd;
+    --mint-300: #a5e7cc;
+    --mint-400: #7dd3b8;
+    --mint-500: #4ecdc4;
+    --mint-600: #2ba39c;
+
+    /* lavender — secondary accent */
+    --lavender-100: #eceffa;
+    --lavender-200: #d4daf1;
+    --lavender-300: #c7cee9;
+    --lavender-400: #a7b5e0;
+    --lavender-500: #8693d2;
+    --lavender-600: #6c7cd0;
+
+    /* butter — highlight / warning */
+    --butter-100: #fff7e0;
+    --butter-200: #ffefc0;
+    --butter-300: #ffe499;
+    --butter-400: #ffd66b;
+    --butter-500: #f5b935;
+
+    /* pink — love / leaderboard */
+    --pink-100: #ffe8ee;
+    --pink-200: #ffc9d9;
+    --pink-300: #ffa8c3;
+    --pink-400: #ff85a8;
+    --pink-500: #f76591;
+
+    /* warm cream neutrals — base/text */
+    --cream-50:  #fffaf5;
+    --cream-100: #fff3eb;
+    --cream-200: #f8e8d8;
+    --cream-300: #ebd5bd;
+    --slate-300: #b8aebe;
+    --slate-500: #76677e;
+    --slate-700: #4a3f55;
+    --slate-900: #2d2236;
+
+    /* ---------- legacy aliases ----------
+       old CSS still references --primary-N / --gray-N / --bg-*.
+       point them at the new ramps so existing rules just adopt the
+       new palette without a full rewrite. */
+    --primary-50:  var(--peach-100);
+    --primary-100: var(--peach-200);
+    --primary-200: var(--peach-300);
+    --primary-300: var(--peach-400);
+    --primary-400: var(--peach-500);
+    --primary-500: var(--peach-500);
+    --primary-600: var(--peach-600);
+    --primary-700: var(--peach-700);
+    --primary-800: var(--peach-700);
+    --primary-900: var(--slate-900);
+
+    --gray-50:  var(--cream-50);
+    --gray-100: var(--cream-100);
+    --gray-200: var(--cream-200);
+    --gray-300: var(--cream-300);
+    --gray-400: var(--slate-300);
+    --gray-500: var(--slate-500);
+    --gray-600: var(--slate-500);
+    --gray-700: var(--slate-700);
+    --gray-800: var(--slate-900);
+    --gray-900: var(--slate-900);
+
+    /* ---------- semantic ---------- */
+    --bg-primary:    var(--cream-50);
+    --bg-secondary:  #ffffff;
+    --bg-tertiary:   var(--cream-100);
+    --glass-bg:      rgba(255, 250, 245, 0.88);
+    --glass-bg-light: rgba(255, 255, 255, 0.65);
+
+    --text-primary:   var(--slate-900);
+    --text-secondary: var(--slate-700);
+    --text-tertiary:  var(--slate-500);
     --text-on-primary: #ffffff;
-    
-    /* Borders */
-    --border-light: rgba(255, 255, 255, 0.1);
-    --border-medium: rgba(255, 255, 255, 0.15);
-    --border-dark: rgba(255, 255, 255, 0.25);
-    
-    /* Shadows - Liquid Glass */
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    
-    /* Radius */
-    --radius-sm: 0.25rem;
-    --radius-md: 0.375rem;
-    --radius-lg: 0.5rem;
-    --radius-xl: 0.75rem;
+
+    --border-light:  rgba(74, 63, 85, 0.08);
+    --border-medium: rgba(74, 63, 85, 0.16);
+    --border-dark:   rgba(74, 63, 85, 0.24);
+
+    /* ---------- shadows — soft puff, color-tinted ----------
+       two layers: warm peach + cool lavender for a balanced cast.
+       no harsh blacks. */
+    --shadow-sm: 0 1px 2px rgba(255, 124, 102, 0.10),
+                 0 2px 4px rgba(108, 124, 208, 0.05);
+    --shadow-md: 0 4px 10px rgba(255, 124, 102, 0.12),
+                 0 8px 18px rgba(108, 124, 208, 0.08);
+    --shadow-lg: 0 8px 22px rgba(255, 124, 102, 0.16),
+                 0 16px 36px rgba(108, 124, 208, 0.11);
+    --shadow-xl: 0 14px 36px rgba(255, 124, 102, 0.20),
+                 0 28px 56px rgba(108, 124, 208, 0.16);
+
+    /* inset highlight — gives buttons a little glassy puff */
+    --inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+
+    /* coloured glow — for active/focus rings */
+    --glow-peach:    0 0 0 4px rgba(255, 124, 102, 0.22);
+    --glow-mint:     0 0 0 4px rgba(78, 205, 196, 0.22);
+    --glow-lavender: 0 0 0 4px rgba(108, 124, 208, 0.22);
+    --glow-pink:     0 0 0 4px rgba(247, 101, 145, 0.22);
+
+    /* ---------- shape — chunky kawaii radii ---------- */
+    --radius-sm:   0.5rem;     /* 8px  — chips, tiny buttons */
+    --radius-md:   0.875rem;   /* 14px — default buttons, inputs */
+    --radius-lg:   1.25rem;    /* 20px — cards, popovers */
+    --radius-xl:   1.75rem;    /* 28px — modals, hero panels */
+    --radius-2xl:  2.25rem;    /* 36px — extra chunky */
     --radius-full: 9999px;
-    
-    /* Transitions */
-    --transition-fast: 150ms;
-    --transition-normal: 250ms;
-    --transition-slow: 400ms;
+
+    /* ---------- motion ---------- */
+    --transition-fast:   140ms;
+    --transition-normal: 220ms;
+    --transition-slow:   360ms;
+
+    --bounce: cubic-bezier(0.68, -0.55, 0.27, 1.55);   /* overshoots */
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);       /* soft pop  */
+    --smooth: cubic-bezier(0.65, 0, 0.35, 1);
+
+    /* ---------- type ---------- */
+    --font-display: 'Fredoka', system-ui, -apple-system, sans-serif;
+    --font-body:    'Nunito', system-ui, -apple-system, sans-serif;
 }
+
+/* =========================================================
+   base reset + typography
+   ========================================================= */
 
 * {
     margin: 0;
@@ -71,12 +157,39 @@ html {
 }
 
 body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: var(--bg-primary);
+    font-family: var(--font-body);
+    font-weight: 500;
     color: var(--text-primary);
+    background-color: var(--bg-primary);
+    /* layered pastel gradient — peach top-left, lavender top-right,
+       mint bottom. fixed so it doesn't scroll with the canvas. */
+    background-image:
+        radial-gradient(60% 50% at  0%   0%, rgba(255, 180, 162, 0.35), transparent 60%),
+        radial-gradient(55% 55% at 100%  0%, rgba(199, 206, 233, 0.32), transparent 60%),
+        radial-gradient(70% 60% at 50% 100%, rgba(181, 234, 215, 0.28), transparent 60%),
+        radial-gradient(40% 40% at 80% 70%, rgba(255, 233, 153, 0.22), transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     height: 100%;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+button, input, select, textarea {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
 }
 
 .app-container {
@@ -84,4 +197,148 @@ body {
     height: 100vh;
     width: 100vw;
     overflow: hidden;
+}
+
+/* =========================================================
+   reusable kawaii button styles — used by primary/secondary
+   buttons across the app via legacy classnames.
+   defined here so every component file picks them up.
+   ========================================================= */
+
+.primary-btn,
+.secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition:
+        transform var(--transition-fast) var(--spring),
+        box-shadow var(--transition-normal) var(--smooth),
+        background-color var(--transition-normal) var(--smooth),
+        color var(--transition-normal) var(--smooth);
+    will-change: transform;
+}
+
+.primary-btn {
+    background: linear-gradient(180deg, var(--peach-400) 0%, var(--peach-500) 100%);
+    color: var(--text-on-primary);
+    box-shadow:
+        var(--shadow-md),
+        var(--inset-highlight);
+}
+
+.primary-btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+        var(--shadow-lg),
+        var(--inset-highlight),
+        var(--glow-peach);
+}
+
+.primary-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: var(--shadow-sm), var(--inset-highlight);
+}
+
+.secondary-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow:
+        var(--shadow-sm),
+        inset 0 0 0 1.5px var(--border-medium);
+}
+
+.secondary-btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    background: var(--cream-100);
+    box-shadow:
+        var(--shadow-md),
+        inset 0 0 0 1.5px var(--lavender-300);
+}
+
+.secondary-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+.primary-btn:disabled,
+.secondary-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.primary-btn.full-width,
+.secondary-btn.full-width {
+    width: 100%;
+}
+
+.primary-btn.small-btn,
+.secondary-btn.small-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: var(--radius-sm);
+}
+
+/* loading shimmer on a button */
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 2.5px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+.secondary-btn.btn-loading::after {
+    border: 2.5px solid var(--cream-200);
+    border-top-color: var(--peach-500);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* focus visible — keyboard users get a kawaii peach ring */
+:focus-visible {
+    outline: none;
+    box-shadow: var(--glow-peach);
+}
+
+/* selection */
+::selection {
+    background: var(--peach-200);
+    color: var(--slate-900);
+}
+
+/* scrollbars */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--peach-200);
+    border-radius: var(--radius-full);
+    border: 2px solid var(--cream-50);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--peach-400);
 }

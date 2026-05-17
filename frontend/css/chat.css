@@ -1,51 +1,78 @@
-/* Chat Widget */
+/* =========================================================
+   chat widget — pastel float bubble bottom-right
+   ========================================================= */
+
 .chat-widget {
     position: fixed;
     bottom: 24px;
     right: 20px;
     z-index: 1000;
-    transition: all 0.3s ease;
+    transition: transform var(--transition-normal) var(--spring);
 }
 
 .chat-toggle {
-    width: 60px;
-    height: 60px;
-    background-color: var(--primary-600);
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--lavender-400), var(--lavender-500));
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s ease;
+    box-shadow:
+        var(--shadow-lg),
+        var(--inset-highlight),
+        var(--glow-lavender);
+    transition:
+        transform var(--transition-fast) var(--spring),
+        box-shadow var(--transition-normal) var(--smooth);
+    animation: chat-bob 3.4s ease-in-out infinite;
 }
 
-.chat-toggle i {
-    color: white;
-    font-size: 1.5rem;
+@keyframes chat-bob {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50%      { transform: translateY(-4px) rotate(3deg); }
 }
 
 .chat-toggle:hover {
-    background-color: var(--primary-700);
-    transform: scale(1.1);
+    transform: scale(1.12) rotate(0deg);
+    animation: none;
+    box-shadow:
+        var(--shadow-xl),
+        var(--inset-highlight),
+        0 0 0 6px rgba(108, 124, 208, 0.22);
+}
+
+.chat-toggle:active {
+    transform: scale(0.96);
+}
+
+.chat-toggle i {
+    color: var(--text-on-primary);
+    font-size: 1.4rem;
 }
 
 .chat-container {
     position: absolute;
-    bottom: 70px;
+    bottom: 72px;
     right: 0;
-    width: 350px;
-    height: 450px;
+    width: 360px;
+    height: 460px;
     background-color: var(--bg-secondary);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid var(--border-medium);
-    border-radius: 24px;
-    box-shadow: var(--shadow-xl);
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl), var(--inset-highlight);
     overflow: hidden;
     display: none;
     flex-direction: column;
-    animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: chat-pop 0.36s var(--spring);
+    transform-origin: bottom right;
+}
+
+@keyframes chat-pop {
+    0%   { opacity: 0; transform: scale(0.7) translateY(15px); }
+    60%  { opacity: 1; transform: scale(1.04) translateY(-3px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .chat-container iframe {
@@ -58,22 +85,35 @@
     position: absolute;
     top: 10px;
     right: 10px;
-    width: 30px;
-    height: 30px;
-    background-color: var(--gray-200);
+    width: 32px;
+    height: 32px;
+    background: var(--cream-100);
+    border: 1.5px solid var(--border-light);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 10;
+    transition:
+        background var(--transition-fast) var(--smooth),
+        transform var(--transition-fast) var(--spring);
+}
+
+.chat-close:hover {
+    background: var(--peach-200);
+    transform: rotate(90deg) scale(1.08);
 }
 
 .chat-close i {
-    color: var(--gray-700);
-    font-size: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
 }
 
 .chat-widget.expanded .chat-container {
     display: flex;
+}
+
+.chat-widget.expanded .chat-toggle {
+    animation: none;
 }
