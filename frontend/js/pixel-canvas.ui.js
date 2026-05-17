@@ -113,6 +113,34 @@ window.PixelCanvas.prototype.setupEventListeners = function() {
 
         document.getElementById('download-png-btn').addEventListener('click', () => this.downloadSnapshot());
 
+        // Header overflow menu (Download / Leaderboard / future actions).
+        // Toggling the .open class drives the dropdown via CSS.
+        const menuBtn = document.getElementById('header-menu-btn');
+        const menuDropdown = document.getElementById('header-menu-dropdown');
+        if (menuBtn && menuDropdown) {
+            const closeMenu = () => {
+                menuDropdown.classList.remove('open');
+                menuBtn.setAttribute('aria-expanded', 'false');
+            };
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = menuDropdown.classList.toggle('open');
+                menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+            // Close on outside click + Escape
+            document.addEventListener('click', (e) => {
+                if (!menuDropdown.contains(e.target) && e.target !== menuBtn) closeMenu();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeMenu();
+            });
+            // Close after selecting any item — the action handlers stop propagation
+            // is unnecessary because they bubble normally; we just hook close here.
+            menuDropdown.querySelectorAll('.header-menu-item').forEach(item => {
+                item.addEventListener('click', () => closeMenu());
+            });
+        }
+
 };
 
 window.PixelCanvas.prototype.setupColorPicker = function() {

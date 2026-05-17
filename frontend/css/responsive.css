@@ -26,8 +26,8 @@
         flex-shrink: 0;
     }
 
-    /* hide zoom/coordinates on mobile — canvas space priority */
-    .stats {
+    /* hide zoom/coordinates overlay on mobile — canvas space priority */
+    .canvas-stats-overlay {
         display: none;
     }
 
@@ -48,6 +48,12 @@
         font-size: 0.95rem;
     }
 
+    /* header menu dropdown — full-width-ish, anchored right */
+    .header-menu-dropdown {
+        right: -4px;
+        min-width: 220px;
+    }
+
     /* ----- toolbar: horizontal pill, icon-only buttons ----- */
     .toolbar {
         position: fixed !important;
@@ -66,11 +72,6 @@
         gap: 0.4rem !important;
     }
 
-    .floating-action-bar {
-        bottom: calc(130px + env(safe-area-inset-bottom, 0px));
-        right: 14px;
-    }
-
     .tool-section {
         flex-direction: row !important;
         flex-wrap: nowrap !important;
@@ -82,25 +83,22 @@
         width: auto;
     }
 
-    .mode-toggle-btn span,
+    /* Mode toggle keeps its label on mobile — it's the primary CTA and the
+       user needs to see "Explore" vs "Edit" at a glance. Everything else
+       (tools, apply/discard, undo) collapses to icon-only circles. */
     .tool-btn span,
-    .toolbar .action-btn span,
-    .floating-action-bar .action-btn span {
+    .toolbar .action-btn span {
         display: none !important;
     }
 
-    .mode-toggle-btn i,
     .tool-btn i,
-    .toolbar .action-btn i,
-    .floating-action-bar .action-btn i {
+    .toolbar .action-btn i {
         margin: 0;
         font-size: 1.05rem;
     }
 
-    .mode-toggle-btn,
     .tool-btn,
-    .toolbar .action-btn,
-    .floating-action-bar .action-btn {
+    .toolbar .action-btn {
         padding: 0 !important;
         width: 40px !important;
         height: 40px !important;
@@ -113,21 +111,39 @@
         aspect-ratio: auto !important;
     }
 
+    /* Mode toggle: slightly slimmer on mobile but keeps text. */
+    .mode-toggle-btn {
+        padding: 0.5rem 0.85rem !important;
+        font-size: 0.85rem !important;
+    }
+    .mode-toggle-btn i {
+        font-size: 0.92rem;
+    }
+
+    /* Apply button on mobile is still wider — it carries the pending badge */
+    .toolbar .action-btn.apply-btn {
+        width: auto !important;
+        min-width: 0 !important;
+        padding: 0 0.7rem !important;
+        border-radius: var(--radius-full) !important;
+        gap: 0.3rem;
+    }
+    .toolbar .action-btn.apply-btn i {
+        font-size: 0.95rem;
+    }
+    /* keep the pending badge visible inside apply */
+    .toolbar .action-btn .pending-badge {
+        display: inline-flex;
+    }
+
     .edit-mode-actions {
-        margin-left: 0.25rem !important;
-        padding-left: 0.35rem !important;
-        border-top: none !important;
-        border-left: 1.5px dashed var(--border-medium) !important;
-        padding-top: 0 !important;
+        margin-left: 0 !important;
+        padding-left: 0 !important;
         width: auto !important;
         flex-direction: row !important;
         display: flex !important;
         align-items: center !important;
         gap: 0.35rem !important;
-    }
-
-    .pending-changes-info {
-        display: none !important;
     }
 
     .brush-size-picker {
@@ -321,8 +337,5 @@
     }
 }
 
-@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
-    .mobile-only-tool {
-        display: none !important;
-    }
-}
+/* (continuous-draw-btn is now visible on desktop too — drag-to-pan made it
+   useful with a left-click drag.) */
