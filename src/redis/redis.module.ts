@@ -22,14 +22,18 @@ export { REDIS_CLIENT } from './redis.constants';
           connectTimeout: 10000,
           commandTimeout: 5000,
           lazyConnect: true,
+          keepAlive: 30000, // send TCP keep-alive every 30s to prevent idle drops
         };
-        return redisUrl
+        const client = redisUrl
           ? new Redis(redisUrl, options)
           : new Redis({
               ...options,
               host: configService.get<string>('redis.host') || 'localhost',
               port: configService.get<number>('redis.port') || 6379,
             });
+        // Ping every 30s so Redis Cloud never considers the connection idle
+        setInterval(() => { client.ping().catch(() => {}); }, 30000);
+        return client;
       },
       inject: [ConfigService],
     },
