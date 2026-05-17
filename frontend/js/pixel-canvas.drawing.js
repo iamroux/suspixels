@@ -71,17 +71,21 @@ window.PixelCanvas.prototype.placePixel = async function(x, y) {
                     }
                 }
             }
+            // One render after the whole brush stroke — avoids brushSize² renders per event
+            this.render();
             this.updatePendingChangesCount();
         } catch (error) {
             console.error('Failed to place pixel:', error);
         }
-    
+
 };
 
 window.PixelCanvas.prototype.placeSinglePixel = function(x, y) {
         const pixelKey = `${x},${y}`;
         if (this.isErasing) {
-            if (!this.originalPixels.has(pixelKey) && this.pixels.has(pixelKey)) {
+            // Skip empty cells — nothing to erase, no server round-trip needed
+            if (!this.pixels.has(pixelKey)) return;
+            if (!this.originalPixels.has(pixelKey)) {
                 this.originalPixels.set(pixelKey, {
                     color: this.pixels.get(pixelKey),
                     metadata: this.pixelMetadata.get(pixelKey)
@@ -248,16 +252,16 @@ window.PixelCanvas.prototype.updatePixelLocally = function(x, y, color, metadata
             this.pixelMetadata.set(`${x},${y}`, existing);
         }
 
+        // Update offscreen canvas only — caller is responsible for render()
         this.renderPixel(x, y, color);
-        this.render();
 
 };
 
 window.PixelCanvas.prototype.deletePixelLocally = function(x, y) {
         this.pixels.delete(`${x},${y}`);
         this.pixelMetadata.delete(`${x},${y}`);
+        // Update offscreen canvas only — caller is responsible for render()
         this.clearPixel(x, y);
-        this.render();
 
 };
 
