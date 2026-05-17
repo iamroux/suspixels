@@ -447,7 +447,6 @@ window.PixelCanvas.prototype.refreshSession = async function() {
             });
             if (!response.ok) return; // not logged in — let the auth modal flow handle it
             const data = await response.json();
-            const prevName = this.userName;
             if (!this.user) this.user = { id: data.id, email: data.email, name: data.name };
             this.user.avatarStyle = data.avatarStyle || 'bottts';
             this.user.pixelCount = data.pixelCount || 0;
@@ -458,14 +457,21 @@ window.PixelCanvas.prototype.refreshSession = async function() {
             this.userName = data.name;
             // Clear any stale guest fallback name now that we know who they are.
             localStorage.removeItem('pixelUserName');
+            // Hydrate authToken if /users/me returned one — this is the only
+            // path that rescues old sessions whose localStorage predates the
+            // Bearer-fallback feature. Without it, sendIdentify on Safari
+            // (cross-origin cookie blocked) goes through the guest path and
+            // the same user shows up twice on the online list.
+            if (data.access_token) localStorage.setItem('authToken', data.access_token);
             this.updateAuthUI();
             // If the constructor opened the auth modal because localStorage
             // was empty, close it now that the cookie has rehydrated us.
             const modal = document.getElementById('auth-modal');
             if (modal && modal.style.display === 'block') modal.style.display = 'none';
-            // If we just learned the name (cookie-only session) or it changed,
-            // push it to the gateway so dedup works without a reconnect.
-            if (prevName !== data.name) this.sendIdentify();
+            // Re-identify on every successful refresh: cheap, idempotent, and
+            // guarantees the WS reflects the freshest name + token regardless
+            // of what state the socket landed in before.
+            this.sendIdentify();
         } catch (e) {
             console.warn('Silent session refresh failed', e);
         }
