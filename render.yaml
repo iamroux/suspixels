@@ -3,6 +3,7 @@ services:
     name: suspixels-api
     env: node
     plan: free
+    region: singapore
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start:prod
     buildFilter:
