@@ -601,21 +601,21 @@
 
 /* podium colours */
 #leaderboard-table tr.rank-gold td {
-    background: linear-gradient(90deg, var(--butter-200), var(--butter-100));
+    background: var(--butter-100);
     border-color: var(--butter-300);
 }
 #leaderboard-table tr.rank-gold .rank-gold-icon { color: var(--butter-500); }
 #leaderboard-table tr.rank-gold .player-name { font-weight: 800; color: var(--slate-900); }
 
 #leaderboard-table tr.rank-silver td {
-    background: linear-gradient(90deg, var(--lavender-200), var(--lavender-100));
+    background: var(--lavender-100);
     border-color: var(--lavender-300);
 }
 #leaderboard-table tr.rank-silver .rank-silver-icon { color: var(--lavender-500); }
 #leaderboard-table tr.rank-silver .player-name { font-weight: 700; }
 
 #leaderboard-table tr.rank-bronze td {
-    background: linear-gradient(90deg, var(--peach-200), var(--peach-100));
+    background: var(--peach-100);
     border-color: var(--peach-300);
 }
 #leaderboard-table tr.rank-bronze .rank-bronze-icon { color: var(--peach-500); }
