@@ -673,6 +673,9 @@ window.PixelCanvas.prototype.render = function() {
         if (this.isEditMode && this.zoom >= 8) this.drawGridLines();
         this.drawCursorPreview();
 
+        if (this.updateRemoteCursorsPositions) {
+            this.updateRemoteCursorsPositions();
+        }
 };
 
 window.PixelCanvas.prototype.renderPixel = function(gridX, gridY, color) {

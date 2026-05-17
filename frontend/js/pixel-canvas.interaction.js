@@ -31,6 +31,25 @@ window.PixelCanvas.prototype.handleMouseMove = function(e) {
         const gridPos = this.screenToGrid(x, y);
         document.getElementById('coordinates').textContent = `${gridPos.x}, ${gridPos.y}`;
 
+        const canvasWidth = this.gridSize * this.pixelSize * this.zoom;
+        const canvasHeight = this.gridSize * this.pixelSize * this.zoom;
+        const centerX = (this.canvas.width - canvasWidth) / 2;
+        const centerY = (this.canvas.height - canvasHeight) / 2;
+
+        const worldX = (x - centerX - this.viewportX) / this.zoom;
+        const worldY = (y - centerY - this.viewportY) / this.zoom;
+        
+        const exactX = worldX / this.pixelSize;
+        const exactY = worldY / this.pixelSize;
+        
+        if (this.sendCursorMove) {
+            const now = Date.now();
+            if (!this._lastCursorSend || now - this._lastCursorSend > 66) {
+                this._lastCursorSend = now;
+                this.sendCursorMove(exactX, exactY);
+            }
+        }
+
         // A pending mousedown that has now travelled past the threshold becomes
         // a drag. Left-button drag in edit+continuous-draw paints; otherwise we
         // pan (left or right).

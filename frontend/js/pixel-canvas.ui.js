@@ -348,3 +348,74 @@ window.PixelCanvas.prototype.initUsersPopover = function() {
         });
     
 };
+
+window.PixelCanvas.prototype.renderRemoteCursor = function(userId, x, y, name, avatarStyle) {
+    if (!this.remoteCursors) this.remoteCursors = new Map();
+    
+    // x and y are exact grid coordinates (floats)
+    this.remoteCursors.set(userId, { x, y, name, avatarStyle, lastSeen: Date.now() });
+    
+    // We update immediately in case the render loop isn't active
+    this.updateRemoteCursorsPositions();
+};
+
+window.PixelCanvas.prototype.updateRemoteCursorsPositions = function() {
+    if (!this.remoteCursors) return;
+    
+    const container = document.getElementById('multiplayer-cursors');
+    if (!container) return;
+    
+    const now = Date.now();
+    const TIMEOUT = 5000; // 5 seconds
+    
+    this.remoteCursors.forEach((cursor, userId) => {
+        // If inactive for a while, fade out and remove
+        if (now - cursor.lastSeen > TIMEOUT) {
+            const el = document.getElementById(`cursor-${userId}`);
+            if (el) {
+                el.classList.add('fade-out');
+                setTimeout(() => {
+                    if (el.parentElement) el.parentElement.removeChild(el);
+                }, 300);
+            }
+            this.remoteCursors.delete(userId);
+            return;
+        }
+        
+        let el = document.getElementById(`cursor-${userId}`);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = `cursor-${userId}`;
+            el.className = 'remote-cursor';
+            
+            // Generate avatar HTML (fallback to bottts if missing)
+            const style = cursor.avatarStyle || 'bottts';
+            const avatarHtml = this.getAvatarHtml(cursor.name, 0, style);
+            
+            // Ensure safe name for HTML injection
+            const safeName = String(cursor.name).replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[c]);
+            
+            el.innerHTML = `
+                <svg class="remote-cursor-pointer" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1.378 0.697003C0.840003 -0.106997 0 0.163003 0 1.135V15.021C0 15.938 1.05 16.452 1.777 15.894L5.617 12.936C5.836 12.767 6.113 12.678 6.398 12.678H14.862C15.806 12.678 16.14 11.472 15.421 10.93L1.378 0.697003Z" fill="#ff6b6b" stroke="white" stroke-width="1.5"/>
+                </svg>
+                <div class="remote-cursor-info">
+                    <div class="remote-cursor-avatar">${avatarHtml}</div>
+                    <span class="remote-cursor-name">${safeName}</span>
+                </div>
+            `;
+            container.appendChild(el);
+            // Trigger reflow for transition
+            el.offsetHeight; 
+        }
+        
+        // Remove fade out if they moved again while fading
+        el.classList.remove('fade-out');
+        
+        // Calculate screen position based on current zoom/pan
+        const screenPos = this.gridToScreen(cursor.x, cursor.y);
+        el.style.transform = `translate(${screenPos.x}px, ${screenPos.y}px)`;
+    });
+};

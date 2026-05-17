@@ -112,6 +112,11 @@ window.PixelCanvas.prototype.handleWebSocketMessage = function(data) {
                 document.getElementById('users-count').textContent = `${this.userCount} online`;
                 this.renderUsersPopover();
                 break;
+            case 'cursor_move':
+                if (this.renderRemoteCursor) {
+                    this.renderRemoteCursor(data.userId, data.x, data.y, data.name, data.avatarStyle);
+                }
+                break;
         }
     
 };
@@ -138,11 +143,33 @@ window.PixelCanvas.prototype.sendIdentify = function() {
             const msg = { type: 'identify', name: this.userName };
             const token = localStorage.getItem('authToken');
             if (token) msg.token = token;
+            
+            // Try to include avatarStyle
+            if (this.user && this.user.avatarStyle) {
+                msg.avatarStyle = this.user.avatarStyle;
+            } else {
+                try {
+                    const storedUser = JSON.parse(localStorage.getItem('pixelUser'));
+                    if (storedUser && storedUser.avatarStyle) {
+                        msg.avatarStyle = storedUser.avatarStyle;
+                    }
+                } catch(e) {}
+            }
+            
             this.ws.send(JSON.stringify(msg));
         } catch (e) {
             console.warn('identify send failed', e);
         }
     
+};
+
+window.PixelCanvas.prototype.sendCursorMove = function(x, y) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        try {
+            this.ws.send(JSON.stringify({ type: 'cursor_move', x, y }));
+        } catch (e) {
+            // Ignore send errors for volatile updates
+        }
 };
 
 window.PixelCanvas.prototype.startHeartbeat = function() {

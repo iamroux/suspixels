@@ -19,6 +19,7 @@ interface ExtWebSocket extends WebSocket {
 interface ClientInfo {
   userId: string | null; // null for guests / not-yet-identified
   name: string;          // '' for not-yet-identified
+  avatarStyle: string | null;
 }
 
 @WebSocketGateway({
@@ -119,6 +120,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     let initialName = '';
     let initialUserId: string | null = null;
+    let initialAvatarStyle: string | null = null;
     const cookieHeader = request?.headers?.cookie || '';
     if (cookieHeader) {
       const token = this.parseCookies(cookieHeader)['access_token'];
@@ -128,6 +130,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
           const user = await this.usersService.findById(payload.sub);
           initialName = user ? user.name : payload.name;
           initialUserId = payload.sub ?? null;
+          initialAvatarStyle = user ? user.avatarStyle : (payload.avatarStyle || null);
           this.logger.log(`Authenticated WS client via cookie: ${initialName}`);
         } catch (e) {
           this.logger.warn(`Invalid WS cookie token: ${e.message}`);
@@ -135,7 +138,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       }
     }
 
-    this.clients.set(client, { userId: initialUserId, name: initialName });
+    this.clients.set(client, { userId: initialUserId, name: initialName, avatarStyle: initialAvatarStyle });
 
     client.on('message', async (raw: Buffer) => {
       try {
@@ -146,8 +149,9 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
               const payload = this.jwtService.verify(msg.token);
               const user = await this.usersService.findById(payload.sub);
               const verified = user ? user.name : (payload.name || msg.name?.trim().slice(0, 40) || 'User');
+              const avatarStyle = user ? user.avatarStyle : (payload.avatarStyle || msg.avatarStyle || 'bottts');
               this.logger.log(`Authenticated WS client via identify token: ${verified}`);
-              this.clients.set(client, { userId: payload.sub ?? null, name: verified });
+              this.clients.set(client, { userId: payload.sub ?? null, name: verified, avatarStyle });
               this.broadcastUserCount();
               return;
             } catch {
@@ -157,9 +161,27 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
           // Cookie already authed us — re-broadcast without downgrading to guest.
           if (initialUserId) { this.broadcastUserCount(); return; }
           const name = `${msg.name?.trim().slice(0, 40) || 'Guest'} (Guest)`;
+          const avatarStyle = msg.avatarStyle || 'bottts';
           this.logger.log(`Guest identified: ${name}`);
-          this.clients.set(client, { userId: null, name });
+          this.clients.set(client, { userId: null, name, avatarStyle });
           this.broadcastUserCount();
+        } else if (msg?.type === 'cursor_move') {
+          const clientInfo = this.clients.get(client);
+          if (clientInfo && clientInfo.name) {
+            const cursorMsg = JSON.stringify({
+              type: 'cursor_move',
+              userId: clientInfo.userId || clientInfo.name, // Use name as fallback ID for guests
+              name: clientInfo.name,
+              avatarStyle: clientInfo.avatarStyle,
+              x: msg.x,
+              y: msg.y,
+            });
+            this.clients.forEach((_info, otherClient) => {
+              if (otherClient !== client && otherClient.readyState === WebSocket.OPEN) {
+                otherClient.send(cursorMsg);
+              }
+            });
+          }
         } else if (msg?.type === 'ping') {
           client.lastSeen = Date.now();
         }
