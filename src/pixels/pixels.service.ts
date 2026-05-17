@@ -33,7 +33,9 @@ export class PixelsService {
   private readonly LEADERBOARD_TTL = 3600; // 1 hour
   private readonly GRID_SIZE = 3000;
   private readonly SNAPSHOT_TTL_MS = 60_000;
+  private readonly COMPACT_TTL_MS = 30_000; // 30s in-process cache for compact pixels
   private snapshotCache: { buffer: Buffer; builtAt: number } | null = null;
+  private compactCache: { data: CompactPixel[]; builtAt: number } | null = null;
 
   // Prevent cache stampede on concurrent DB fallback
   private dbLoadPromise: Promise<PixelResponseDto[]> | null = null;
@@ -87,20 +89,32 @@ export class PixelsService {
   }
 
   async getAllPixelsCompact(): Promise<CompactPixel[]> {
+    // Serve from in-process cache — avoids hgetall on every page load
+    const now = Date.now();
+    if (this.compactCache && now - this.compactCache.builtAt < this.COMPACT_TTL_MS) {
+      return this.compactCache.data;
+    }
+
+    let data: CompactPixel[] | null = null;
     try {
       const cachedPixels = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
       if (Object.keys(cachedPixels).length > 0) {
-        return this.toCompactPixels(cachedPixels);
+        data = this.toCompactPixels(cachedPixels);
       }
     } catch (error) {
       this.logger.warn('Redis unavailable, falling back to database', error);
     }
 
-    if (this.compactDbLoadPromise) return this.compactDbLoadPromise;
-    this.compactDbLoadPromise = this.loadCompactPixelsFromDb().finally(() => {
-      this.compactDbLoadPromise = null;
-    });
-    return this.compactDbLoadPromise;
+    if (!data) {
+      if (this.compactDbLoadPromise) return this.compactDbLoadPromise;
+      this.compactDbLoadPromise = this.loadCompactPixelsFromDb().finally(() => {
+        this.compactDbLoadPromise = null;
+      });
+      data = await this.compactDbLoadPromise;
+    }
+
+    this.compactCache = { data, builtAt: Date.now() };
+    return data;
   }
 
   private async loadCompactPixelsFromDb(): Promise<CompactPixel[]> {
@@ -126,6 +140,7 @@ export class PixelsService {
     createPixelDto: CreatePixelDto & { userId?: string; userName?: string },
   ): Promise<PixelResponseDto> {
     this.snapshotCache = null;
+    this.compactCache = null;
     const { x, y, color, userId, userName } = createPixelDto;
 
     const pendingPixel: PendingPixel = { x, y, color, updatedById: userId, timestamp: Date.now() };
@@ -152,6 +167,7 @@ export class PixelsService {
 
   async deletePixel(deletePixelDto: DeletePixelDto): Promise<{ x: number; y: number }> {
     this.snapshotCache = null;
+    this.compactCache = null;
     const { x, y } = deletePixelDto;
 
     await this.redisClient.del(`${this.PIXEL_BUFFER_KEY}:${x},${y}`);
@@ -176,14 +192,19 @@ export class PixelsService {
       return this.snapshotCache.buffer;
     }
 
-    let pixelMap = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
+    let pixelMap: Record<string, string> = {};
+    try {
+      pixelMap = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
+    } catch (error) {
+      this.logger.warn('Redis unavailable for snapshot, falling back to database', error);
+    }
 
     if (Object.keys(pixelMap).length === 0) {
       const pixels = await this.pixelRepository.find({ select: ['x', 'y', 'color'] });
       pixelMap = {};
       pixels.forEach((p) => { pixelMap[`${p.x},${p.y}`] = p.color; });
       if (Object.keys(pixelMap).length > 0) {
-        await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
+        await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap).catch(() => {});
       }
     }
 
