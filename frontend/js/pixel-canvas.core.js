@@ -127,7 +127,7 @@ window.PixelCanvas.prototype.initColdStartBanner = function() {
 
 window.PixelCanvas.prototype.getApiBaseUrl = function() {
         // Change this once you have your Render backend URL (e.g., 'https://suspixels-api.onrender.com')
-        const prodApiUrl = 'https://suspixels-api.onrender.com'; 
+        const prodApiUrl = 'https://suspixels-api-ysve.onrender.com';
         if (prodApiUrl) return prodApiUrl;
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -145,7 +145,7 @@ window.PixelCanvas.prototype.getApiBaseUrl = function() {
 
 window.PixelCanvas.prototype.getWsUrl = function() {
         // Change this once you have your Render backend URL (e.g., 'wss://suspixels-api.onrender.com')
-        const prodWsUrl = 'wss://suspixels-api.onrender.com'; 
+        const prodWsUrl = 'wss://suspixels-api-ysve.onrender.com';
         if (prodWsUrl) return prodWsUrl;
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
