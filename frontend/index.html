@@ -5,17 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sus Pixels</title>
-    <link rel="stylesheet" href="css/tokens.css?v=3">
-    <link rel="stylesheet" href="css/header.css?v=3">
-    <link rel="stylesheet" href="css/canvas.css?v=3">
-    <link rel="stylesheet" href="css/modals.css?v=4">
-    <link rel="stylesheet" href="css/profile.css?v=4">
-    <link rel="stylesheet" href="css/palettes.css?v=3">
-    <link rel="stylesheet" href="css/chat.css?v=3">
-    <link rel="stylesheet" href="css/responsive.css?v=3">
-    <link rel="stylesheet" href="css/loaders.css?v=3">
-    <link rel="stylesheet" href="css/tour.css?v=4">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/open-props@1.7.4/easings.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/open-props@1.7.4/animations.min.css">
+    <link rel="stylesheet" href="css/tokens.css?v=10">
+    <link rel="stylesheet" href="css/header.css?v=10">
+    <link rel="stylesheet" href="css/canvas.css?v=10">
+    <link rel="stylesheet" href="css/modals.css?v=10">
+    <link rel="stylesheet" href="css/profile.css?v=10">
+    <link rel="stylesheet" href="css/palettes.css?v=10">
+    <link rel="stylesheet" href="css/chat.css?v=10">
+    <link rel="stylesheet" href="css/responsive.css?v=12">
+    <link rel="stylesheet" href="css/loaders.css?v=12">
+    <link rel="stylesheet" href="css/tour.css?v=10">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ff6b6b'/><rect x='20' y='20' width='20' height='20' fill='white'/><rect x='60' y='20' width='20' height='20' fill='white'/><rect x='20' y='60' width='20' height='20' fill='white'/><rect x='60' y='60' width='20' height='20' fill='white'/></svg>">
     <link rel="manifest" href="manifest.json">
@@ -32,8 +36,8 @@
         <!-- Startup Loader -->
         <div id="startup-loader" class="startup-loader">
             <div class="loader-content">
-                <div class="loader-spinner"></div>
-                <h2 class="loader-text">Loading Canvas...</h2>
+                <div class="loader-spinner"><span></span></div>
+                <h2 class="loader-text">Loading the canvas...</h2>
             </div>
         </div>
         <div class="header">
@@ -270,7 +274,7 @@
                     </div>
                     <div class="input-group">
                         <label for="profile-avatar-style">Avatar Style</label>
-                        <select id="profile-avatar-style" style="width: 100%; padding: 0.75rem; background-color: var(--bg-tertiary); border: 1px solid var(--border-light); border-radius: var(--radius-md); color: white; font-family: inherit; font-size: 1rem;">
+                        <select id="profile-avatar-style">
                             <option value="adventurer">adventurer</option>
                             <option value="adventurer-neutral">adventurer-neutral</option>
                             <option value="avataaars">avataaars</option>
@@ -303,8 +307,8 @@
                     </div>
                     <div class="input-group">
                         <label for="profile-email">Email</label>
-                        <input type="email" id="profile-email" readonly style="background-color: rgba(255,255,255,0.05); cursor: not-allowed; border-color: transparent;">
-                        <small style="color: var(--text-tertiary);">Email cannot be changed yet</small>
+                        <input type="email" id="profile-email" readonly style="background-color: var(--cream-100); cursor: not-allowed; color: var(--text-tertiary);">
+                        <small>Email cannot be changed yet</small>
                     </div>
                     <div class="input-group">
                         <label for="profile-password">New Password (leave blank to keep current)</label>

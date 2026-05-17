@@ -1,3 +1,10 @@
+/* =========================================================
+   loaders — startup screen, cold-start banner, skeletons
+   btn-loading + spin keyframe live in tokens.css.
+   ========================================================= */
+
+/* ----- cold start banner (free-tier wake-up) ----- */
+
 .cold-start-banner {
     position: fixed;
     top: calc(env(safe-area-inset-top, 0) + 0.5rem);
@@ -8,15 +15,17 @@
     align-items: center;
     gap: 0.625rem;
     max-width: calc(100% - 1rem);
-    padding: 0.625rem 0.875rem;
-    background: #fff8e1;
-    color: #6b4f00;
-    border: 1px solid #f0d77a;
-    border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, var(--butter-100), var(--butter-200));
+    color: var(--slate-700);
+    border: 1.5px solid var(--butter-300);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md), var(--inset-highlight);
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 600;
     line-height: 1.3;
-    animation: coldStartFadeIn 0.25s ease;
+    animation: cold-start-in 0.35s var(--spring);
 }
 
 .cold-start-banner[hidden] {
@@ -24,106 +33,87 @@
 }
 
 .cold-start-banner i {
-    color: #b08300;
+    color: var(--butter-500);
     flex-shrink: 0;
+    font-size: 1rem;
 }
 
 .cold-start-dismiss {
-    background: none;
+    background: rgba(255, 255, 255, 0.6);
     border: none;
-    color: inherit;
-    font-size: 1.25rem;
+    color: var(--text-secondary);
+    font-size: 1.05rem;
     line-height: 1;
-    padding: 0 0.25rem;
+    padding: 0.15rem 0.5rem;
     cursor: pointer;
     margin-left: 0.25rem;
-    opacity: 0.6;
+    border-radius: var(--radius-full);
+    opacity: 0.8;
+    transition:
+        opacity var(--transition-fast) var(--smooth),
+        background var(--transition-fast) var(--smooth),
+        transform var(--transition-fast) var(--spring);
 }
 
 .cold-start-dismiss:hover {
     opacity: 1;
+    background: #fff;
+    transform: rotate(90deg);
 }
 
-@keyframes coldStartFadeIn {
-    from { opacity: 0; transform: translateX(-50%) translateY(-0.5rem); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+@keyframes cold-start-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.9); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1);   }
 }
 
+/* ----- skeleton shimmer (cream-tinted) ----- */
 
-/* Loading & Skeleton Styles */
-@keyframes shimmer {
-    0% { background-position: -468px 0; }
-    100% { background-position: 468px 0; }
+@keyframes skeleton-shimmer {
+    0%   { background-position: -468px 0; }
+    100% { background-position:  468px 0; }
 }
 
 .skeleton {
-    background: #f6f7f8;
-    background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+    background: var(--cream-100);
+    background-image: linear-gradient(
+        to right,
+        var(--cream-100) 0%,
+        var(--cream-200) 20%,
+        var(--cream-100) 40%,
+        var(--cream-100) 100%
+    );
     background-repeat: no-repeat;
     background-size: 800px 104px;
     display: inline-block;
     position: relative;
-    animation: shimmer 1.5s infinite linear;
-    border-radius: 4px;
+    animation: skeleton-shimmer 1.4s infinite linear;
+    border-radius: var(--radius-sm);
 }
 
-/* For Dark Mode skeletons */
-.skeleton-dark {
-    background: rgba(255, 255, 255, 0.05);
-    background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 20%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.05) 100%);
-    background-size: 800px 104px;
-    animation: shimmer 1.5s infinite linear;
-}
-
-.btn-loading {
-    position: relative;
-    color: transparent !important;
-    pointer-events: none;
-}
-
-.btn-loading::after {
-    content: "";
-    position: absolute;
-    width: 1.25rem;
-    height: 1.25rem;
-    top: 50%;
-    left: 50%;
-    margin-top: -0.625rem;
-    margin-left: -0.625rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Leaderboard Skeleton */
 .leaderboard-skeleton-row {
-    height: 40px;
+    height: 42px;
     width: 100%;
     margin-bottom: 8px;
+    border-radius: var(--radius-md);
 }
 
-/* Dashboard Skeleton */
-.dash-stat-skeleton {
-    height: 48px;
-    width: 120px;
-    margin: 0 auto;
-}.startup-loader {
+/* ----- startup loader ----- */
+
+.startup-loader {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
     height: 100vh;
     background-color: var(--bg-primary);
+    background-image:
+        radial-gradient(60% 50% at  0%   0%, rgba(255, 180, 162, 0.45), transparent 60%),
+        radial-gradient(55% 55% at 100%  0%, rgba(199, 206, 233, 0.40), transparent 60%),
+        radial-gradient(70% 60% at 50% 100%, rgba(181, 234, 215, 0.36), transparent 60%);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 9999;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
+    transition: opacity 0.5s var(--smooth), visibility 0.5s var(--smooth);
 }
 
 .startup-loader.hidden {
@@ -135,25 +125,55 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
+/* bouncing dots loader — kawaii alternative to a spinner.
+   3 pastel dots stagger their bounce for a cheerful idle. */
 .loader-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid var(--border-medium);
-    border-top-color: var(--primary-500);
+    width: auto;
+    height: 24px;
+    border: none;
+    border-radius: 0;
+    animation: none;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.loader-spinner::before,
+.loader-spinner::after,
+.loader-spinner > span {
+    content: '';
+    display: block;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: dot-bounce 0.9s var(--smooth) infinite;
+}
+
+.loader-spinner::before {
+    background: var(--peach-500);
+    animation-delay: 0s;
+}
+.loader-spinner > span {
+    background: var(--mint-500);
+    animation-delay: 0.18s;
+}
+.loader-spinner::after {
+    background: var(--lavender-500);
+    animation-delay: 0.36s;
+}
+
+@keyframes dot-bounce {
+    0%, 80%, 100% { transform: translateY(0)    scale(0.9); opacity: 0.7; }
+    40%           { transform: translateY(-14px) scale(1.1); opacity: 1;   }
 }
 
 .loader-text {
-    font-size: 1.2rem;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
     font-weight: 600;
     color: var(--text-primary);
-    letter-spacing: 0.05em;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
+    letter-spacing: 0.01em;
 }
