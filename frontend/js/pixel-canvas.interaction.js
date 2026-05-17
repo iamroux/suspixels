@@ -199,6 +199,22 @@ window.PixelCanvas.prototype.handleTouchMove = function(e) {
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
 
+            if (this.sendCursorMove) {
+                const canvasWidth = this.gridSize * this.pixelSize * this.zoom;
+                const canvasHeight = this.gridSize * this.pixelSize * this.zoom;
+                const centerX = (this.canvas.width - canvasWidth) / 2;
+                const centerY = (this.canvas.height - canvasHeight) / 2;
+                
+                const exactX = (x - centerX - this.viewportX) / (this.pixelSize * this.zoom);
+                const exactY = (y - centerY - this.viewportY) / (this.pixelSize * this.zoom);
+                
+                const now = Date.now();
+                if (!this._lastCursorSend || now - this._lastCursorSend > 66) {
+                    this._lastCursorSend = now;
+                    this.sendCursorMove(exactX, exactY);
+                }
+            }
+
             const moveDistance = Math.sqrt(
                 Math.pow(x - this.touchStartX, 2) +
                 Math.pow(y - this.touchStartY, 2)

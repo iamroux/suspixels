@@ -113,6 +113,9 @@ window.PixelCanvas.prototype.handleWebSocketMessage = function(data) {
                 this.renderUsersPopover();
                 break;
             case 'cursor_move':
+                if (data.name === this.userName) {
+                    break;
+                }
                 if (this.renderRemoteCursor) {
                     this.renderRemoteCursor(data.userId, data.x, data.y, data.name, data.avatarStyle);
                 }
