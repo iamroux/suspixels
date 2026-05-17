@@ -181,11 +181,14 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     // Dedup logged-in users by userId (robust against name changes mid-session
     // and against one tab still pre-identify while another is named).
     // Guests dedup by name (same browser → same Guest_xyz across tabs).
-    // Anonymous sockets (pre-identify) each count as 1 so a lone visitor
-    // never sees "0 online".
+    // Truly anonymous sockets (never identified — cookie path failed AND no
+    // identify message ever arrived, e.g. a Safari tab whose localStorage
+    // doesn't have pixelUser/authToken) are NOT counted here, otherwise the
+    // same person on a second device shows as "2 online" with one ghost
+    // entry that isn't in the names list. The frontend ensures a lone
+    // visitor still sees "1 online".
     const seenUserIds = new Set<string>();
     const namesSet = new Set<string>();
-    let anonCount = 0;
 
     this.clients.forEach((info) => {
       if (info.userId) {
@@ -194,15 +197,13 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
         if (info.name) namesSet.add(info.name);
       } else if (info.name) {
         namesSet.add(info.name);
-      } else {
-        anonCount++;
       }
     });
 
     const names = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
     const message = JSON.stringify({
       type: 'user_count',
-      count: names.length + anonCount,
+      count: names.length,
       names,
     });
     this.clients.forEach((_info, client) => {

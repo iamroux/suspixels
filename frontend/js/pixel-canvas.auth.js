@@ -435,25 +435,37 @@ window.PixelCanvas.prototype.logout = async function() {
 };
 
 window.PixelCanvas.prototype.refreshSession = async function() {
-        if (!this.user) return;
+        // Note: do NOT early-return when this.user is null. A returning visitor
+        // may have only the cookie (e.g. Safari that cleared localStorage, or
+        // an old session predating the pixelUser blob). Try /users/me so the
+        // cookie can rehydrate state — otherwise the WS would stay anonymous
+        // forever and the user gets counted as a ghost on the online list.
         try {
             const response = await fetch(`${this.getApiBaseUrl()}/users/me`, {
                 credentials: 'include',
                 headers: this.getAuthHeaders(),
             });
-            if (response.ok) {
-                const data = await response.json();
-                const nameChanged = this.userName !== data.name;
-                this.user.avatarStyle = data.avatarStyle || 'bottts';
-                this.user.pixelCount = data.pixelCount || 0;
-                this.user.name = data.name;
-                localStorage.setItem('pixelUser', JSON.stringify(this.user));
-                this.userName = data.name;
-                this.updateAuthUI();
-                // If the name resolved late (e.g. ws opened before we had it,
-                // or another tab renamed us), push it to the gateway now.
-                if (nameChanged) this.sendIdentify();
-            }
+            if (!response.ok) return; // not logged in — let the auth modal flow handle it
+            const data = await response.json();
+            const prevName = this.userName;
+            if (!this.user) this.user = { id: data.id, email: data.email, name: data.name };
+            this.user.avatarStyle = data.avatarStyle || 'bottts';
+            this.user.pixelCount = data.pixelCount || 0;
+            this.user.name = data.name;
+            this.user.id = data.id;
+            this.user.email = data.email;
+            localStorage.setItem('pixelUser', JSON.stringify(this.user));
+            this.userName = data.name;
+            // Clear any stale guest fallback name now that we know who they are.
+            localStorage.removeItem('pixelUserName');
+            this.updateAuthUI();
+            // If the constructor opened the auth modal because localStorage
+            // was empty, close it now that the cookie has rehydrated us.
+            const modal = document.getElementById('auth-modal');
+            if (modal && modal.style.display === 'block') modal.style.display = 'none';
+            // If we just learned the name (cookie-only session) or it changed,
+            // push it to the gateway so dedup works without a reconnect.
+            if (prevName !== data.name) this.sendIdentify();
         } catch (e) {
             console.warn('Silent session refresh failed', e);
         }

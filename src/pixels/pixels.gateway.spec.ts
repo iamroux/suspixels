@@ -20,29 +20,33 @@ describe('WebsocketGateway online count', () => {
     clients = gateway['clients'] as any;
   });
 
-  it('counts every connected client, including unidentified ones', () => {
+  it('counts identified users only — anon sockets do not inflate the count', () => {
+    // Anon sockets get filtered out here so the same user on a 2nd device
+    // (which silently failed to identify) doesn't appear as a phantom "+1".
+    // The frontend handles the "lone visitor sees 1 online" UX itself.
     const a = fakeClient();
     const b = fakeClient();
     const c = fakeClient();
     clients.set(a, { userId: 'u1', name: 'Alice' });
-    clients.set(b, { userId: null, name: '' }); // connected but not yet identified
+    clients.set(b, { userId: null, name: '' }); // connected but never identified
     clients.set(c, { userId: 'u2', name: 'Bob' });
 
     gateway['broadcastUserCount']();
 
     const msg = lastBroadcast(a);
     expect(msg.type).toBe('user_count');
-    expect(msg.count).toBe(3);
+    expect(msg.count).toBe(2);
     expect(msg.names).toEqual(['Alice', 'Bob']);
   });
 
-  it('reports a solo unidentified client as 1 online, not 0', () => {
+  it('a solo unidentified socket reports 0 from the server (client shows 1)', () => {
     const solo = fakeClient();
     clients.set(solo, { userId: null, name: '' });
 
     gateway['broadcastUserCount']();
 
-    expect(lastBroadcast(solo).count).toBe(1);
+    // Server count is 0; frontend bumps it to max(count, 1) when connected.
+    expect(lastBroadcast(solo).count).toBe(0);
   });
 
   it('deduplicates same user across multiple tabs/devices (by userId)', () => {
@@ -76,20 +80,20 @@ describe('WebsocketGateway online count', () => {
     expect(msg.names.length).toBe(1);
   });
 
-  it('deduplicates by userId when one tab is logged-in and another is mid-handshake', () => {
-    // Same user, but tab2's identify hasn't completed yet (userId still null).
-    // It still counts as a separate anon presence — that is intentional, since
-    // we cannot prove it's the same user without an id. The named copy counts
-    // as 1 user.
-    const tab1 = fakeClient();
-    const tab2 = fakeClient();
-    clients.set(tab1, { userId: 'u-1', name: 'Alice' });
-    clients.set(tab2, { userId: null, name: '' });
+  it('one identified + one anon-ghost on the same person = 1 (not 2)', () => {
+    // This is the bug the user reported: phone tab silently failed to
+    // identify (cookie not sent + no localStorage authToken), so the
+    // server has an anon entry alongside the Mac's named entry. Previously
+    // we returned count=2 with names=['Alice']; now the anon is dropped.
+    const mac = fakeClient();
+    const phone = fakeClient();
+    clients.set(mac, { userId: 'u-1', name: 'Alice' });
+    clients.set(phone, { userId: null, name: '' });
 
     gateway['broadcastUserCount']();
 
-    const msg = lastBroadcast(tab1);
-    expect(msg.count).toBe(2); // 1 named + 1 anon
+    const msg = lastBroadcast(mac);
+    expect(msg.count).toBe(1);
     expect(msg.names).toEqual(['Alice']);
   });
 

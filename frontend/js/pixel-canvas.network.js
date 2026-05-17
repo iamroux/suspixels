@@ -104,9 +104,12 @@ window.PixelCanvas.prototype.handleWebSocketMessage = function(data) {
                 this.deletePixel(data.x, data.y);
                 break;
             case 'user_count':
-                this.userCount = data.count;
+                // Server only counts identified presences; if I'm connected
+                // but not yet identified (e.g. modal still up), make sure
+                // the display still shows at least me.
+                this.userCount = Math.max(data.count, this.connected ? 1 : 0);
                 this.userNames = Array.isArray(data.names) ? data.names : [];
-                document.getElementById('users-count').textContent = `${data.count} online`;
+                document.getElementById('users-count').textContent = `${this.userCount} online`;
                 this.renderUsersPopover();
                 break;
         }
