@@ -28,18 +28,16 @@ export class PixelsService {
   private readonly PIXEL_GRID_KEY = 'pixel_grid';
   private readonly LEADERBOARD_KEY = 'leaderboard';
   private readonly BATCH_SIZE = 100;
-  private readonly BUFFER_TTL = 300;       // 5 min
-  private readonly PIXEL_GRID_TTL = 3600; // unused — pixel_grid has no TTL
-  private readonly LEADERBOARD_TTL = 3600; // 1 hour
+  private readonly BUFFER_TTL = 300;
+  private readonly LEADERBOARD_TTL = 3600;
   private readonly GRID_SIZE = 3000;
   private readonly SNAPSHOT_TTL_MS = 60_000;
-  private readonly COMPACT_TTL_MS = 30_000; // 30s in-process cache for compact pixels
-  private snapshotCache: { buffer: Buffer; builtAt: number } | null = null;
-  private compactCache: { data: CompactPixel[]; builtAt: number } | null = null;
 
-  // Prevent cache stampede on concurrent DB fallback
-  private dbLoadPromise: Promise<PixelResponseDto[]> | null = null;
-  private compactDbLoadPromise: Promise<CompactPixel[]> | null = null;
+  // In-process pixel map — built from DB at startup, kept current on every write.
+  // Eliminates hgetall on every request (hgetall was timing out for large grids).
+  private pixelMap: Record<string, string> = {};
+
+  private snapshotCache: { buffer: Buffer; builtAt: number } | null = null;
 
   // Prevent overlapping cron runs
   private isProcessingPixels = false;
@@ -47,7 +45,6 @@ export class PixelsService {
   constructor(
     @InjectRepository(Pixel)
     private readonly pixelRepository: Repository<Pixel>,
-    // Fix 17: EventEmitter decouples service from gateway (removes forwardRef)
     private readonly eventEmitter: EventEmitter2,
     @Inject(REDIS_CLIENT)
     private readonly redisClient: Redis,
@@ -58,91 +55,47 @@ export class PixelsService {
   }
 
   private async initializePixelCache() {
+    // Load authoritative data from DB into in-process map
     const pixels = await this.pixelRepository.find({ select: ['x', 'y', 'color'] });
-    const pixelMap: Record<string, string> = {};
-    pixels.forEach((p) => { pixelMap[`${p.x},${p.y}`] = p.color; });
-    await this.redisClient.del(this.PIXEL_GRID_KEY);
-    if (Object.keys(pixelMap).length > 0) {
-      await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
-    }
+    this.pixelMap = {};
+    pixels.forEach((p) => { this.pixelMap[`${p.x},${p.y}`] = p.color; });
+    this.logger.log(`Loaded ${pixels.length} pixels into in-process map`);
+
+    // Sync to Redis pixel_grid in background — non-blocking, non-critical
+    const snapshot = { ...this.pixelMap };
+    this.redisClient.del(this.PIXEL_GRID_KEY)
+      .then(() => Object.keys(snapshot).length > 0
+        ? this.redisClient.hset(this.PIXEL_GRID_KEY, snapshot)
+        : null)
+      .catch((e) => this.logger.warn(`Redis pixel_grid sync failed (non-critical): ${e.message}`));
   }
 
+  // Served directly from in-process map — no Redis read
   async getAllPixels(): Promise<PixelResponseDto[]> {
-    try {
-      const cachedPixels = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
-      if (Object.keys(cachedPixels).length > 0) {
-        return Object.entries(cachedPixels).map(([key, color]) => {
-          const [x, y] = key.split(',').map(Number);
-          return { x, y, color };
-        });
-      }
-    } catch (error) {
-      this.logger.warn('Redis unavailable, falling back to database', error);
-    }
-
-    // Coalesce concurrent misses into one DB query
-    if (this.dbLoadPromise) return this.dbLoadPromise;
-    this.dbLoadPromise = this.loadPixelsFromDb().finally(() => {
-      this.dbLoadPromise = null;
+    return Object.entries(this.pixelMap).map(([key, color]) => {
+      const [x, y] = key.split(',').map(Number);
+      return { x, y, color };
     });
-    return this.dbLoadPromise;
   }
 
+  // Served directly from in-process map — no Redis read
   async getAllPixelsCompact(): Promise<CompactPixel[]> {
-    // Serve from in-process cache — avoids hgetall on every page load
-    const now = Date.now();
-    if (this.compactCache && now - this.compactCache.builtAt < this.COMPACT_TTL_MS) {
-      return this.compactCache.data;
-    }
-
-    let data: CompactPixel[] | null = null;
-    try {
-      const cachedPixels = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
-      if (Object.keys(cachedPixels).length > 0) {
-        data = this.toCompactPixels(cachedPixels);
-      }
-    } catch (error) {
-      this.logger.warn('Redis unavailable, falling back to database', error);
-    }
-
-    if (!data) {
-      if (this.compactDbLoadPromise) return this.compactDbLoadPromise;
-      this.compactDbLoadPromise = this.loadCompactPixelsFromDb().finally(() => {
-        this.compactDbLoadPromise = null;
-      });
-      data = await this.compactDbLoadPromise;
-    }
-
-    this.compactCache = { data, builtAt: Date.now() };
-    return data;
-  }
-
-  private async loadCompactPixelsFromDb(): Promise<CompactPixel[]> {
-    const pixels = await this.pixelRepository.find({
-      select: ['x', 'y', 'color'],
-      order: { updatedAt: 'DESC' },
+    return Object.entries(this.pixelMap).map(([key, color]) => {
+      const [x, y] = key.split(',').map(Number);
+      return [x, y, color] as CompactPixel;
     });
-    this.updatePixelCache(pixels).catch(() => {
-      this.logger.error('Failed to update pixel cache after compact DB fallback');
-    });
-    return pixels.map((pixel) => [pixel.x, pixel.y, pixel.color] as CompactPixel);
-  }
-
-  private async loadPixelsFromDb(): Promise<PixelResponseDto[]> {
-    const pixels = await this.pixelRepository.find({ order: { updatedAt: 'DESC' } });
-    this.updatePixelCache(pixels).catch(() => {
-      this.logger.error('Failed to update pixel cache after DB fallback');
-    });
-    return pixels.map(this.toResponseDto);
   }
 
   async setPixel(
     createPixelDto: CreatePixelDto & { userId?: string; userName?: string },
   ): Promise<PixelResponseDto> {
     this.snapshotCache = null;
-    this.compactCache = null;
     const { x, y, color, userId, userName } = createPixelDto;
 
+    // Update in-process map immediately so next read is correct
+    this.pixelMap[`${x},${y}`] = color;
+
+    // Write to Redis buffer (cron flushes to DB every 30s)
     const pendingPixel: PendingPixel = { x, y, color, updatedById: userId, timestamp: Date.now() };
     await this.redisClient.setex(
       `${this.PIXEL_BUFFER_KEY}:${x},${y}`,
@@ -150,13 +103,11 @@ export class PixelsService {
       JSON.stringify(pendingPixel),
     );
 
-    await this.redisClient.hset(this.PIXEL_GRID_KEY, `${x},${y}`, color);
+    // Update pixel_grid in Redis best-effort (non-blocking)
+    this.redisClient.hset(this.PIXEL_GRID_KEY, `${x},${y}`, color).catch(() => {});
 
     const responseDto: PixelResponseDto = { x, y, color, insertedBy: userName, userId, updatedAt: new Date() };
-
-    // Fix 17: emit event instead of calling gateway directly
     this.eventEmitter.emit('pixel.updated', responseDto);
-
     return responseDto;
   }
 
@@ -167,11 +118,18 @@ export class PixelsService {
 
   async deletePixel(deletePixelDto: DeletePixelDto): Promise<{ x: number; y: number }> {
     this.snapshotCache = null;
-    this.compactCache = null;
     const { x, y } = deletePixelDto;
 
-    await this.redisClient.del(`${this.PIXEL_BUFFER_KEY}:${x},${y}`);
-    await this.redisClient.hdel(this.PIXEL_GRID_KEY, `${x},${y}`);
+    // Remove from in-process map immediately
+    delete this.pixelMap[`${x},${y}`];
+
+    // Remove pending buffer entry so cron doesn't re-insert it
+    await this.redisClient.del(`${this.PIXEL_BUFFER_KEY}:${x},${y}`).catch(() => {});
+
+    // Update pixel_grid in Redis best-effort
+    this.redisClient.hdel(this.PIXEL_GRID_KEY, `${x},${y}`).catch(() => {});
+
+    // Authoritative DB delete
     await this.pixelRepository
       .createQueryBuilder()
       .delete()
@@ -180,9 +138,7 @@ export class PixelsService {
       .returning(['x', 'y'])
       .execute();
 
-    // Fix 17: emit event instead of calling gateway directly
     this.eventEmitter.emit('pixel.deleted', { x, y });
-
     return { x, y };
   }
 
@@ -192,24 +148,11 @@ export class PixelsService {
       return this.snapshotCache.buffer;
     }
 
-    let pixelMap: Record<string, string> = {};
-    try {
-      pixelMap = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
-    } catch (error) {
-      this.logger.warn('Redis unavailable for snapshot, falling back to database', error);
-    }
-
-    if (Object.keys(pixelMap).length === 0) {
-      const pixels = await this.pixelRepository.find({ select: ['x', 'y', 'color'] });
-      pixelMap = {};
-      pixels.forEach((p) => { pixelMap[`${p.x},${p.y}`] = p.color; });
-      if (Object.keys(pixelMap).length > 0) {
-        await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap).catch(() => {});
-      }
-    }
+    // Use in-process map — no Redis read needed
+    const pixelMap = this.pixelMap;
 
     const png = new PNG({ width: this.GRID_SIZE, height: this.GRID_SIZE, filterType: 0, deflateLevel: 1 });
-    png.data.fill(255); // white + fully opaque
+    png.data.fill(255);
 
     for (const [key, hex] of Object.entries(pixelMap)) {
       const [x, y] = key.split(',').map(Number);
@@ -221,7 +164,6 @@ export class PixelsService {
       png.data[idx] = r;
       png.data[idx + 1] = g;
       png.data[idx + 2] = b;
-      // alpha already 255 from fill
     }
 
     const buffer = await new Promise<Buffer>((resolve, reject) => {
@@ -288,22 +230,6 @@ export class PixelsService {
     return keys;
   }
 
-  private async updatePixelCache(pixels: Pixel[]) {
-    const pixelMap: Record<string, string> = {};
-    pixels.forEach((p) => { pixelMap[`${p.x},${p.y}`] = p.color; });
-    if (Object.keys(pixelMap).length > 0) {
-      await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
-    }
-  }
-
-  private toCompactPixels(cachedPixels: Record<string, string>): CompactPixel[] {
-    return Object.entries(cachedPixels).map(([key, color]) => {
-      const [x, y] = key.split(',').map(Number);
-      return [x, y, color] as CompactPixel;
-    });
-  }
-
-  // Fix 15: cache leaderboard in Redis to avoid repeated GROUP BY query
   async getLeaderboard(): Promise<{ name: string; pixelCount: number }[]> {
     const cached = await this.redisClient.get(this.LEADERBOARD_KEY);
     if (cached) return JSON.parse(cached);
