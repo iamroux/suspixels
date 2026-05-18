@@ -7,11 +7,13 @@ import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './redis/redis.module';
 import appConfig from './config/app.config';
 import redisConfig from './config/redis.config';
+import mailConfig from './config/mail.config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PalettesModule } from './palettes/palettes.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -21,12 +23,13 @@ import { PalettesModule } from './palettes/palettes.module';
     DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, redisConfig],
+      load: [appConfig, redisConfig, mailConfig],
     }),
     RedisModule,
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     PalettesModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
