@@ -1,6 +1,5 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MailService } from './mail.service';
 import { BulkMailDto } from './dto/bulk-mail.dto';
 
@@ -10,8 +9,7 @@ export class MailController {
   constructor(private readonly mailService: MailService) {}
 
   @Post('send-bulk')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Send welcome email to a list of addresses' })
+  @ApiOperation({ summary: 'Send email to a list of addresses' })
   @ApiResponse({ status: 201, description: 'Returns sent/failed counts' })
   async sendBulk(
     @Body() dto: BulkMailDto,
