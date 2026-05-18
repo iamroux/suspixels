@@ -16,14 +16,6 @@ export class MailController {
   async sendBulk(
     @Body() dto: BulkMailDto,
   ): Promise<{ sent: number; failed: number }> {
-    const results = await Promise.allSettled(
-      dto.emails.map((email) => this.mailService.sendWelcomeEmail(email)),
-    );
-
-    let sent = 0;
-    let failed = 0;
-    results.forEach((r) => (r.status === 'fulfilled' ? sent++ : failed++));
-
-    return { sent, failed };
+    return this.mailService.sendBulk(dto.emails, dto.subject, dto.body);
   }
 }
