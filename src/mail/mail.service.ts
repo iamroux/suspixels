@@ -14,7 +14,7 @@ export class MailService {
       port: this.configService.get<number>('mail.port'),
       secure: this.configService.get<boolean>('mail.secure'),
       // force IPv4 — Render's network can't reach Gmail over IPv6
-      tls: { family: 4 },
+      family: 4,
       auth: {
         user: this.configService.get<string>('mail.user'),
         pass: this.configService.get<string>('mail.password'),
