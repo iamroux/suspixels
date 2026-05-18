@@ -45,9 +45,10 @@ export class MailService {
     emails: string[],
     subject: string,
     content: string,
-  ): Promise<{ sent: number; failed: number }> {
+  ): Promise<{ sent: number; failed: number; errors?: string[] }> {
     let sent = 0;
     let failed = 0;
+    const errors: string[] = [];
 
     const results = await Promise.allSettled(
       emails.map((email) => this.sendStyledMail(email, subject, content)),
@@ -58,11 +59,13 @@ export class MailService {
         sent++;
       } else {
         failed++;
-        this.logger.error(`Failed to send to ${emails[index]}: ${result.reason}`);
+        const msg = `${emails[index]}: ${result.reason}`;
+        errors.push(msg);
+        this.logger.error(`Failed to send to ${msg}`);
       }
     });
 
-    return { sent, failed };
+    return { sent, failed, errors: errors.length ? errors : undefined };
   }
 }
 

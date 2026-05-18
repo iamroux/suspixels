@@ -13,7 +13,7 @@ export class MailController {
   @ApiResponse({ status: 201, description: 'Returns sent/failed counts' })
   async sendBulk(
     @Body() dto: BulkMailDto,
-  ): Promise<{ sent: number; failed: number }> {
+  ): Promise<{ sent: number; failed: number; errors?: string[] }> {
     return this.mailService.sendBulk(dto.emails, dto.subject, dto.body);
   }
 }
