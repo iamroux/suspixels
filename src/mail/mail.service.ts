@@ -13,11 +13,13 @@ export class MailService {
       host: this.configService.get<string>('mail.host'),
       port: this.configService.get<number>('mail.port'),
       secure: this.configService.get<boolean>('mail.secure'),
+      // force IPv4 — Render's network can't reach Gmail over IPv6
+      tls: { family: 4 },
       auth: {
         user: this.configService.get<string>('mail.user'),
         pass: this.configService.get<string>('mail.password'),
       },
-    });
+    } as any);
   }
 
   /** Raw send — html is used as-is, no template wrapper. */
