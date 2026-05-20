@@ -31,6 +31,15 @@
         display: none;
     }
 
+    /* move info button off the header on mobile — it becomes the canvas FAB */
+    #info-btn {
+        display: none;
+    }
+
+    .info-fab {
+        display: flex;
+    }
+
     /* shrink header icon buttons to circular icons */
     .header-icon-btn {
         width: 36px;
