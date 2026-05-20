@@ -313,8 +313,10 @@
 }
 
 /* ── Info FAB (canvas corner, mobile only) ────────────── */
+/*    display:none here is the base; the @media below overrides it.
+      This file loads after responsive.css so the media query here wins. */
 .info-fab {
-    display: none; /* hidden on desktop — #info-btn lives in the header */
+    display: none;
     position: fixed;
     top: 68px;
     left: 14px;
@@ -348,7 +350,13 @@
     transform: scale(0.95);
 }
 
-/* ── Mobile ───────────────────────────────────────────── */
+/* ── Show FAB + hide header btn on mobile ─────────────── */
+@media (max-width: 768px) {
+    #info-btn  { display: none; }
+    .info-fab  { display: flex; }
+}
+
+/* ── Mobile card tweaks ───────────────────────────────── */
 @media (max-width: 480px) {
     .info-modal-card {
         max-height: 92vh;
