@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="css/responsive.css?v=12">
     <link rel="stylesheet" href="css/loaders.css?v=12">
     <link rel="stylesheet" href="css/tour.css?v=10">
+    <link rel="stylesheet" href="css/info-modal.css?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ff6b6b'/><rect x='20' y='20' width='20' height='20' fill='white'/><rect x='60' y='20' width='20' height='20' fill='white'/><rect x='20' y='60' width='20' height='20' fill='white'/><rect x='60' y='60' width='20' height='20' fill='white'/></svg>">
     <link rel="manifest" href="manifest.json">
@@ -60,6 +61,10 @@
                         <span>0, 0</span>
                     </div>
                 </div>
+                <button id="info-btn" class="header-icon-btn" title="About &amp; Rules" onclick="document.getElementById('info-modal').style.display='flex'">
+                    <i class="fas fa-circle-info"></i>
+                    <span>Info</span>
+                </button>
                 <button id="download-png-btn" class="header-icon-btn" title="Download canvas as PNG">
                     <i class="fas fa-download"></i>
                     <span>Download</span>
@@ -476,6 +481,145 @@
         </div>
     </div>
 </div>
+
+    <!-- ── Info modal ── -->
+    <div id="info-modal" class="info-modal-backdrop" onclick="if(event.target===this)this.style.display='none'" style="display:none">
+        <div class="info-modal-card">
+
+            <!-- Header -->
+            <div class="info-modal-header">
+                <div class="info-modal-logo">
+                    <span class="logo-sus">Sus</span><span class="logo-pixels">Pixels</span>
+                </div>
+                <p class="info-modal-tagline">A collaborative pixel canvas. Every pixel counts.</p>
+                <button class="info-modal-close" onclick="document.getElementById('info-modal').style.display='none'" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="info-modal-body">
+
+                <!-- Overview -->
+                <section class="info-section">
+                    <h3 class="info-section-title"><i class="fas fa-map"></i> Overview</h3>
+                    <p class="info-text">
+                        Suspixels is a shared 3000×3000 canvas where anyone can place a pixel.
+                        Work together, claim territory, build art — one pixel at a time.
+                    </p>
+
+                    <div class="info-controls-grid">
+                        <div class="info-control-item">
+                            <span class="info-control-icon"><i class="fas fa-mouse-pointer"></i></span>
+                            <span>Click to place a pixel</span>
+                        </div>
+                        <div class="info-control-item">
+                            <span class="info-control-icon"><i class="fas fa-hand-paper"></i></span>
+                            <span>Click &amp; drag to pan</span>
+                        </div>
+                        <div class="info-control-item">
+                            <span class="info-control-icon"><i class="fas fa-search-plus"></i></span>
+                            <span>Scroll / pinch to zoom</span>
+                        </div>
+                        <div class="info-control-item">
+                            <span class="info-control-icon"><i class="fas fa-info-circle"></i></span>
+                            <span>Tap a pixel to see who placed it</span>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="info-divider"></div>
+
+                <!-- Rules -->
+                <section class="info-section">
+                    <h3 class="info-section-title"><i class="fas fa-gavel"></i> Rules</h3>
+                    <p class="info-text">These rules keep the canvas fair and fun for everyone.</p>
+
+                    <div class="info-rules-group">
+                        <div class="info-rules-label prohibited"><i class="fas fa-ban"></i> Prohibited</div>
+
+                        <details class="info-rule">
+                            <summary class="info-rule-summary">
+                                <span class="info-rule-num">1</span>
+                                <span class="info-rule-title">Inappropriate content</span>
+                                <span class="info-badge ban">permanent ban</span>
+                                <i class="fas fa-chevron-down info-rule-chevron"></i>
+                            </summary>
+                            <div class="info-rule-body">
+                                Explicit, hateful, discriminatory, or illegal content is not tolerated in any form.
+                            </div>
+                        </details>
+
+                        <details class="info-rule">
+                            <summary class="info-rule-summary">
+                                <span class="info-rule-num">2</span>
+                                <span class="info-rule-title">Bots &amp; scripted insertion</span>
+                                <span class="info-badge ban">permanent ban</span>
+                                <i class="fas fa-chevron-down info-rule-chevron"></i>
+                            </summary>
+                            <div class="info-rule-body">
+                                One account per person. Automated scripts, bots, or any programmatic pixel placement is strictly forbidden.
+                            </div>
+                        </details>
+
+                        <details class="info-rule">
+                            <summary class="info-rule-summary">
+                                <span class="info-rule-num">3</span>
+                                <span class="info-rule-title">Griefing</span>
+                                <span class="info-badge timeout">timeout</span>
+                                <i class="fas fa-chevron-down info-rule-chevron"></i>
+                            </summary>
+                            <div class="info-rule-body">
+                                Deliberately destroying others' work with no creative intent. Repeated offences escalate to a permanent ban.
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="info-rules-group" style="margin-top:1rem">
+                        <div class="info-rules-label fairplay"><i class="fas fa-handshake"></i> Fair play</div>
+
+                        <details class="info-rule">
+                            <summary class="info-rule-summary">
+                                <span class="info-rule-num">1</span>
+                                <span class="info-rule-title">Territorial disputes</span>
+                                <span class="info-badge allowed">allowed</span>
+                                <i class="fas fa-chevron-down info-rule-chevron"></i>
+                            </summary>
+                            <div class="info-rule-body">
+                                Competing for canvas space is part of the game. Fight for your territory fair and square.
+                            </div>
+                        </details>
+
+                        <details class="info-rule">
+                            <summary class="info-rule-summary">
+                                <span class="info-rule-num">2</span>
+                                <span class="info-rule-title">Claiming empty space</span>
+                                <span class="info-badge allowed">allowed</span>
+                                <i class="fas fa-chevron-down info-rule-chevron"></i>
+                            </summary>
+                            <div class="info-rule-body">
+                                Unclaimed areas of the canvas are free for anyone to use. Go build something great.
+                            </div>
+                        </details>
+                    </div>
+                </section>
+
+                <div class="info-divider"></div>
+
+                <!-- Footer links -->
+                <footer class="info-modal-footer">
+                    <span>v1.0 &bull; Made with <i class="fas fa-heart" style="color:var(--pink-400)"></i></span>
+                    <div class="info-footer-links">
+                        <a href="mailto:Suspixelsite@gmail.com">Contact</a>
+                        <a href="/privacy.html">Privacy</a>
+                        <a href="/terms.html">Terms</a>
+                        <a href="/about.html">About</a>
+                    </div>
+                </footer>
+
+            </div>
+        </div>
+    </div>
 
     <script src="js/pixel-canvas.core.js?v=8"></script>
     <script src="js/pixel-canvas.tour.js?v=4"></script>
