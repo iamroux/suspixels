@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="css/modals.css?v=10">
     <link rel="stylesheet" href="css/profile.css?v=10">
     <link rel="stylesheet" href="css/palettes.css?v=10">
-    <link rel="stylesheet" href="css/chat.css?v=10">
+    <link rel="stylesheet" href="css/chat.css?v=11">
     <link rel="stylesheet" href="css/responsive.css?v=13">
     <link rel="stylesheet" href="css/loaders.css?v=12">
     <link rel="stylesheet" href="css/tour.css?v=10">
@@ -476,13 +476,42 @@
 <div class="chat-widget">
     <div class="chat-toggle">
         <i class="fas fa-comment-dots"></i>
+        <span class="chat-unread" hidden>0</span>
     </div>
     <div class="chat-container">
-        <iframe src="https://www5.cbox.ws/box/?boxid=957506&boxtag=QUG5u9" 
-                allowtransparency="yes" allow="autoplay" 
-                frameborder="0" scrolling="auto"></iframe>
-        <div class="chat-close">
-            <i class="fas fa-times"></i>
+        <div class="chat-header">
+            <div class="chat-header-title">
+                <i class="fas fa-comment-dots"></i>
+                <span>Chat</span>
+            </div>
+            <div class="chat-header-actions">
+                <button type="button" class="chat-mute" title="Mute sound" aria-label="Mute chat sound">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button type="button" class="chat-close" title="Close" aria-label="Close chat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-empty" id="chat-empty">No messages yet — say hi!</div>
+        </div>
+        <div class="chat-toast" id="chat-toast" hidden></div>
+        <div class="chat-input" id="chat-input-wrap">
+            <textarea
+                id="chat-input"
+                placeholder="Type a message…"
+                maxlength="500"
+                rows="1"
+                inputmode="text"
+                autocomplete="off"
+                enterkeyhint="send"></textarea>
+            <button type="button" id="chat-send-btn" class="chat-send" disabled aria-label="Send">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        <div class="chat-login-hint" id="chat-login-hint" style="display:none">
+            <a href="#" id="chat-login-link">Log in to chat →</a>
         </div>
     </div>
 </div>
@@ -634,7 +663,7 @@
     <script src="js/pixel-canvas.drawing.js?v=6"></script>
     <script src="js/pixel-canvas.network.js?v=5"></script>
     <script src="js/pixel-canvas.palettes.js?v=3"></script>
-    <script src="js/chat-widget.js?v=3"></script>
+    <script src="js/chat-panel.js?v=2"></script>
     <script src="js/app.js?v=3"></script>
 </body>
 

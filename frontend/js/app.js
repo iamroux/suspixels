@@ -2,7 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     window.pixelCanvas = new window.PixelCanvas();
-    new window.ChatWidget();
+    new window.ChatPanel();
 
     // Ensure leaderboard modal is hidden on page load
     const leaderboardModal = document.getElementById('leaderboard-modal');

@@ -16,7 +16,7 @@ describe('WebsocketGateway online count', () => {
   let clients: Map<any, { userId: string | null; name: string }>;
 
   beforeEach(() => {
-    gateway = new WebsocketGateway({} as any, {} as any);
+    gateway = new WebsocketGateway({} as any, {} as any, {} as any);
     clients = gateway['clients'] as any;
   });
 

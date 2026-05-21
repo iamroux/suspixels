@@ -180,43 +180,21 @@
         flex-direction: column;
     }
 
-    .chat-close {
-        position: relative;
-        top: auto;
-        right: auto;
-        width: 100%;
-        height: 48px;
-        border-radius: 0;
-        background: var(--cream-100);
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 0 1rem;
-        flex-shrink: 0;
-        order: -1;
+    /* on mobile the header is the sheet handle — slightly taller, rounded top */
+    .chat-header {
         border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-        border: none;
-        border-bottom: 1.5px dashed var(--border-light);
-        transform: none;
+        padding: 14px 16px;
     }
 
-    .chat-close:hover {
-        background: var(--cream-200);
-        transform: none;
+    /* messages list gets a little extra room on a sheet */
+    .chat-messages {
+        padding: 12px 12px calc(8px + env(safe-area-inset-bottom, 0px));
     }
 
-    .chat-close i {
-        color: var(--text-secondary);
-        font-size: 1rem;
-    }
-
-    .chat-close::before {
-        content: 'Chat';
-        flex: 1;
-        font-family: var(--font-display);
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--text-primary);
+    /* input sits flush against the bottom of the sheet */
+    .chat-input,
+    .chat-login-hint {
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     }
 
     /* ----- color picker / palette editor ----- */

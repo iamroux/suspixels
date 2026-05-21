@@ -120,8 +120,13 @@ window.PixelCanvas.prototype.handleWebSocketMessage = function(data) {
                     this.renderRemoteCursor(data.userId, data.x, data.y, data.name, data.avatarStyle);
                 }
                 break;
+            case 'chat_history':
+            case 'chat_message':
+            case 'chat_error':
+                if (this.chatPanel) this.chatPanel.handle(data);
+                break;
         }
-    
+
 };
 
 window.PixelCanvas.prototype.updateConnectionStatus = function() {

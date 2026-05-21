@@ -12,6 +12,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PalettesModule } from './palettes/palettes.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PalettesModule } from './palettes/palettes.module';
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     PalettesModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

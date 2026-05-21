@@ -11,6 +11,7 @@ import { Server, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { ChatService } from '../chat/chat.service';
 
 interface ExtWebSocket extends WebSocket {
   lastSeen: number;
@@ -18,7 +19,7 @@ interface ExtWebSocket extends WebSocket {
 
 interface ClientInfo {
   userId: string | null; // null for guests / not-yet-identified
-  name: string;          // '' for not-yet-identified
+  name: string; // '' for not-yet-identified
   avatarStyle: string | null;
 }
 
@@ -26,18 +27,22 @@ interface ClientInfo {
   cors: true,
   transports: ['websocket', 'polling'],
 })
-export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class WebsocketGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   private readonly logger = new Logger(WebsocketGateway.name);
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
+    private readonly chatService: ChatService,
   ) {}
 
   @WebSocketServer()
   server: Server;
 
   private clients: Map<WebSocket, ClientInfo> = new Map();
+  private historySent: WeakSet<WebSocket> = new WeakSet();
 
   // Fix 16: batch buffer — collect all updates within a single event loop tick
   private pendingUpdates: any[] = [];
@@ -52,7 +57,10 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       const now = Date.now();
       let changed = false;
       this.clients.forEach((_info, ws: ExtWebSocket) => {
-        if (ws.readyState !== WebSocket.OPEN || (ws.lastSeen && now - ws.lastSeen > 35000)) {
+        if (
+          ws.readyState !== WebSocket.OPEN ||
+          (ws.lastSeen && now - ws.lastSeen > 35000)
+        ) {
           ws.terminate();
           this.clients.delete(ws);
           changed = true;
@@ -85,7 +93,8 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
   private flushBroadcast() {
     this.flushScheduled = false;
-    if (this.pendingUpdates.length === 0 && this.pendingDeletes.length === 0) return;
+    if (this.pendingUpdates.length === 0 && this.pendingDeletes.length === 0)
+      return;
 
     const updates = this.pendingUpdates.splice(0);
     const deletes = this.pendingDeletes.splice(0);
@@ -116,7 +125,9 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     // Disconnect cleanup runs in handleDisconnect (fires on 'close', including
     // after a socket error). This listener exists only so an 'error' event
     // can't crash the process for lack of a handler.
-    client.on('error', (e) => this.logger.warn(`WS client error: ${e.message}`));
+    client.on('error', (e) =>
+      this.logger.warn(`WS client error: ${e.message}`),
+    );
 
     let initialName = '';
     let initialUserId: string | null = null;
@@ -130,7 +141,9 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
           const user = await this.usersService.findById(payload.sub);
           initialName = user ? user.name : payload.name;
           initialUserId = payload.sub ?? null;
-          initialAvatarStyle = user ? user.avatarStyle : (payload.avatarStyle || null);
+          initialAvatarStyle = user
+            ? user.avatarStyle
+            : payload.avatarStyle || null;
           this.logger.log(`Authenticated WS client via cookie: ${initialName}`);
         } catch (e) {
           this.logger.warn(`Invalid WS cookie token: ${e.message}`);
@@ -138,7 +151,11 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       }
     }
 
-    this.clients.set(client, { userId: initialUserId, name: initialName, avatarStyle: initialAvatarStyle });
+    this.clients.set(client, {
+      userId: initialUserId,
+      name: initialName,
+      avatarStyle: initialAvatarStyle,
+    });
 
     client.on('message', async (raw: Buffer) => {
       try {
@@ -148,23 +165,38 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
             try {
               const payload = this.jwtService.verify(msg.token);
               const user = await this.usersService.findById(payload.sub);
-              const verified = user ? user.name : (payload.name || msg.name?.trim().slice(0, 40) || 'User');
-              const avatarStyle = user ? user.avatarStyle : (payload.avatarStyle || msg.avatarStyle || 'bottts');
-              this.logger.log(`Authenticated WS client via identify token: ${verified}`);
-              this.clients.set(client, { userId: payload.sub ?? null, name: verified, avatarStyle });
-              this.broadcastUserCount();
+              const verified = user
+                ? user.name
+                : payload.name || msg.name?.trim().slice(0, 40) || 'User';
+              const avatarStyle = user
+                ? user.avatarStyle
+                : payload.avatarStyle || msg.avatarStyle || 'bottts';
+              this.logger.log(
+                `Authenticated WS client via identify token: ${verified}`,
+              );
+              this.clients.set(client, {
+                userId: payload.sub ?? null,
+                name: verified,
+                avatarStyle,
+              });
+              await this.afterIdentify(client);
               return;
             } catch {
               // token invalid — fall through
             }
           }
           // Cookie already authed us — re-broadcast without downgrading to guest.
-          if (initialUserId) { this.broadcastUserCount(); return; }
+          if (initialUserId) {
+            await this.afterIdentify(client);
+            return;
+          }
           const name = `${msg.name?.trim().slice(0, 40) || 'Guest'} (Guest)`;
           const avatarStyle = msg.avatarStyle || 'bottts';
           this.logger.log(`Guest identified: ${name}`);
           this.clients.set(client, { userId: null, name, avatarStyle });
-          this.broadcastUserCount();
+          await this.afterIdentify(client);
+        } else if (msg?.type === 'chat_send') {
+          await this.handleChatSend(client, msg);
         } else if (msg?.type === 'cursor_move') {
           const clientInfo = this.clients.get(client);
           if (clientInfo && clientInfo.name) {
@@ -177,7 +209,10 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
               y: msg.y,
             });
             this.clients.forEach((_info, otherClient) => {
-              if (otherClient !== client && otherClient.readyState === WebSocket.OPEN) {
+              if (
+                otherClient !== client &&
+                otherClient.readyState === WebSocket.OPEN
+              ) {
                 otherClient.send(cursorMsg);
               }
             });
@@ -231,5 +266,77 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     this.clients.forEach((_info, client) => {
       if (client.readyState === WebSocket.OPEN) client.send(message);
     });
+  }
+
+  private async afterIdentify(client: WebSocket) {
+    this.broadcastUserCount();
+    if (this.historySent.has(client)) return;
+    this.historySent.add(client);
+    try {
+      const messages = await this.chatService.getRecent();
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'chat_history', messages }));
+      }
+    } catch (e: any) {
+      this.logger.warn(`Failed to send chat history: ${e?.message ?? e}`);
+    }
+  }
+
+  private sendToClient(client: WebSocket, payload: object) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(payload));
+    }
+  }
+
+  private broadcastChatMessage(payload: object) {
+    const data = JSON.stringify({ type: 'chat_message', ...payload });
+    this.clients.forEach((_info, client) => {
+      if (client.readyState === WebSocket.OPEN) client.send(data);
+    });
+  }
+
+  private async handleChatSend(client: WebSocket, msg: any) {
+    const info = this.clients.get(client);
+    if (!info || !info.userId) {
+      this.sendToClient(client, {
+        type: 'chat_error',
+        code: 'guests_cannot_send',
+      });
+      return;
+    }
+    const body = typeof msg?.body === 'string' ? msg.body.trim() : '';
+    if (body.length === 0) return;
+    if (body.length > 500) {
+      this.sendToClient(client, { type: 'chat_error', code: 'too_long' });
+      return;
+    }
+    const rl = await this.chatService.checkRateLimit(info.userId);
+    if (!rl.ok) {
+      this.sendToClient(client, {
+        type: 'chat_error',
+        code: 'rate_limited',
+        retryAfter: rl.retryAfter,
+      });
+      return;
+    }
+    let prestigeCount = 0;
+    try {
+      prestigeCount = await this.usersService.getPixelCount(info.userId);
+    } catch {
+      // non-fatal; prestige stays 0
+    }
+    try {
+      const payload = await this.chatService.sendMessage({
+        userId: info.userId,
+        username: info.name,
+        avatarStyle: info.avatarStyle ?? 'bottts',
+        prestigeCount,
+        body,
+      });
+      this.broadcastChatMessage(payload);
+    } catch (e: any) {
+      this.logger.error(`Failed to send chat message: ${e?.message ?? e}`);
+      this.sendToClient(client, { type: 'chat_error', code: 'server_error' });
+    }
   }
 }
