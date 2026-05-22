@@ -147,11 +147,12 @@ class ChatPanel {
         this.widget.classList.add('expanded');
         this.clearUnread();
         this.applyAuthUI();
-        // Defer focus so the panel pop animation doesn't fight it
-        setTimeout(() => {
-            if (!this.inputWrap.hidden) this.inputEl.focus();
+        // Double rAF: fires after the browser has painted the newly-visible
+        // flex container, so scrollHeight is fully settled before we read it.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
             this.scrollToBottom(true);
-        }, 50);
+            if (this.inputWrap.style.display !== 'none') this.inputEl.focus();
+        }));
     }
 
     closePanel() {
