@@ -300,7 +300,6 @@
 /* ── Input ─────────────────────────────────────────────── */
 .chat-input {
     flex-shrink: 0;
-    position: relative;  /* anchor for gif picker */
     display: flex;
     align-items: flex-end;
     gap: 8px;
@@ -439,19 +438,13 @@
 
 /* ── GIF picker panel ─────────────────────────────────── */
 .chat-gif-picker {
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    right: 0;
-    background: var(--cream-50, #fffbf5);
-    border: 1px solid var(--lavender-100, #ede9fe);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    max-height: 260px;
     overflow: hidden;
-    max-height: 320px;
-    z-index: 20;
+    border-top: 1px solid var(--lavender-100, #ede9fe);
+    background: var(--cream-50, #fffbf5);
 }
 
 .chat-gif-search-wrap {
