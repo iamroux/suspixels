@@ -419,6 +419,15 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── @mentions ────────────────────────────────────────── */
+.chat-mention {
+    color: var(--lavender-600, #7c3aed);
+    font-weight: 600;
+    background: var(--lavender-100, #ede9fe);
+    border-radius: 3px;
+    padding: 0 3px;
+}
+
 /* ── Loading state ────────────────────────────────────── */
 .chat-loading {
     display: flex;

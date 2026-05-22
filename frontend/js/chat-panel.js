@@ -264,7 +264,7 @@ class ChatPanel {
                     <span class="chat-name">${escapeHtml(m.username)}</span>
                     <span class="chat-time" title="${ts.toLocaleString()}">${formatRelative(ts)}</span>
                 </div>
-                <div class="chat-body">${escapeHtml(m.body)}</div>
+                <div class="chat-body">${renderBody(m.body)}</div>
             </div>
         `;
         // Click avatar/name → open public profile
@@ -327,6 +327,14 @@ class ChatPanel {
             // ignore — autoplay restrictions etc.
         }
     }
+}
+
+function renderBody(str) {
+    // Escape HTML first (XSS safe), then highlight @mentions
+    return escapeHtml(str).replace(
+        /@([\w-]+)/g,
+        '<span class="chat-mention">@$1</span>'
+    );
 }
 
 function escapeHtml(str) {
