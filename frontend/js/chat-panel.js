@@ -47,7 +47,13 @@ class ChatPanel {
     }
 
     setupEventListeners() {
-        this.toggle.addEventListener('click', () => this.openPanel());
+        this.toggle.addEventListener('click', () => {
+            if (this.isOpen()) {
+                this.closePanel();
+            } else {
+                this.openPanel();
+            }
+        });
 
         this.closeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
