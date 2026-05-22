@@ -419,6 +419,104 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── GIF button ───────────────────────────────────────── */
+.chat-gif-btn {
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 10px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--lavender-100, #ede9fe);
+    color: var(--lavender-600, #7c3aed);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background var(--transition-fast) var(--smooth);
+}
+.chat-gif-btn:hover { background: var(--lavender-200, #ddd6fe); }
+
+/* ── GIF picker panel ─────────────────────────────────── */
+.chat-gif-picker {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--cream-50, #fffbf5);
+    border: 1px solid var(--lavender-100, #ede9fe);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 320px;
+    z-index: 20;
+}
+
+.chat-gif-search-wrap {
+    padding: 8px 10px 6px;
+    border-bottom: 1px solid var(--lavender-100, #ede9fe);
+}
+
+.chat-gif-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 10px;
+    border: 1px solid var(--lavender-200, #ddd6fe);
+    border-radius: var(--radius-full);
+    background: #fff;
+    font-size: 0.85rem;
+    color: var(--text-primary, #333);
+    outline: none;
+}
+.chat-gif-search:focus { border-color: var(--lavender-400, #a78bfa); }
+
+.chat-gif-grid {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+    align-content: flex-start;
+}
+
+.chat-gif-item {
+    width: calc(33.33% - 3px);
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity var(--transition-fast) var(--smooth), transform var(--transition-fast) var(--spring);
+}
+.chat-gif-item:hover { opacity: 0.85; transform: scale(1.03); }
+
+.chat-gif-status {
+    width: 100%;
+    text-align: center;
+    padding: 20px;
+    color: var(--lavender-400, #a78bfa);
+    font-size: 0.82rem;
+    font-style: italic;
+}
+
+.chat-gif-attribution {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    color: var(--text-muted, #aaa);
+    text-align: right;
+    border-top: 1px solid var(--lavender-100, #ede9fe);
+}
+
+/* ── GIF in message bubble ────────────────────────────── */
+.chat-gif {
+    display: block;
+    max-width: 220px;
+    max-height: 180px;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+}
+
 /* ── @mentions ────────────────────────────────────────── */
 .chat-mention {
     color: var(--lavender-600, #7c3aed);

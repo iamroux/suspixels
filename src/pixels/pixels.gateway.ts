@@ -310,6 +310,20 @@ export class WebsocketGateway
       this.sendToClient(client, { type: 'chat_error', code: 'too_long' });
       return;
     }
+    // If the body is a GIF token, validate it's actually a Giphy CDN URL
+    const gifMatch = body.match(/^\[gif:([^\]]+)\]$/);
+    if (gifMatch) {
+      try {
+        const gifUrl = new URL(gifMatch[1]);
+        if (!/^media[0-9]*\.giphy\.com$/.test(gifUrl.hostname)) {
+          this.sendToClient(client, { type: 'chat_error', code: 'invalid_gif' });
+          return;
+        }
+      } catch {
+        this.sendToClient(client, { type: 'chat_error', code: 'invalid_gif' });
+        return;
+      }
+    }
     const rl = await this.chatService.checkRateLimit(info.userId);
     if (!rl.ok) {
       this.sendToClient(client, {

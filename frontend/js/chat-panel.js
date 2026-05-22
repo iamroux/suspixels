@@ -17,6 +17,10 @@ class ChatPanel {
         this.toastEl = document.getElementById('chat-toast');
         this.unreadEl = document.querySelector('.chat-unread');
         this.loadingEl = document.getElementById('chat-loading');
+        this.gifBtn = document.getElementById('chat-gif-btn');
+        this.gifPicker = document.getElementById('chat-gif-picker');
+        this.gifSearchEl = document.getElementById('chat-gif-input');
+        this.gifGrid = document.getElementById('chat-gif-grid');
 
         this.historyLoaded = false;
         this.unreadCount = 0;
@@ -26,8 +30,11 @@ class ChatPanel {
         this.stickyBottom = true;
         this.toastTimer = null;
         this.recentIds = new Set();
+        this.gifSearchTimer = null;
+        this.gifTrendingLoaded = false;
 
         this.setupEventListeners();
+        this.setupGifPicker();
         this.applyMuteUI();
         this.applyAuthUI();
         this.expose();
@@ -301,6 +308,112 @@ class ChatPanel {
         }
     }
 
+    // ── GIF picker ────────────────────────────────────────
+
+    setupGifPicker() {
+        this.gifBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.gifPicker.style.display === 'none') {
+                this.openGifPicker();
+            } else {
+                this.closeGifPicker();
+            }
+        });
+
+        this.gifSearchEl.addEventListener('input', () => {
+            clearTimeout(this.gifSearchTimer);
+            this.gifSearchTimer = setTimeout(() => {
+                const q = this.gifSearchEl.value.trim();
+                if (q) {
+                    this.searchGifs(q);
+                } else {
+                    this.loadTrending();
+                }
+            }, 400);
+        });
+
+        // Close picker on outside click
+        document.addEventListener('click', (e) => {
+            if (this.gifPicker.style.display !== 'none'
+                && !this.gifPicker.contains(e.target)
+                && e.target !== this.gifBtn) {
+                this.closeGifPicker();
+            }
+        });
+    }
+
+    openGifPicker() {
+        this.gifPicker.style.display = 'flex';
+        this.gifSearchEl.focus();
+        if (!this.gifTrendingLoaded) this.loadTrending();
+    }
+
+    closeGifPicker() {
+        this.gifPicker.style.display = 'none';
+    }
+
+    async loadTrending() {
+        this.gifGrid.innerHTML = '<div class="chat-gif-status">Trending…</div>';
+        try {
+            const res = await fetch(
+                `https://api.giphy.com/v1/gifs/trending?api_key=62BHxuNYDstYFxj1JBODTT1X3JCK8Fd2&limit=24&rating=g`
+            );
+            const { data } = await res.json();
+            this.gifTrendingLoaded = true;
+            this.renderGifs(data);
+        } catch {
+            this.gifGrid.innerHTML = '<div class="chat-gif-status">Failed to load</div>';
+        }
+    }
+
+    async searchGifs(q) {
+        this.gifGrid.innerHTML = '<div class="chat-gif-status">Searching…</div>';
+        try {
+            const res = await fetch(
+                `https://api.giphy.com/v1/gifs/search?api_key=62BHxuNYDstYFxj1JBODTT1X3JCK8Fd2&q=${encodeURIComponent(q)}&limit=24&rating=g`
+            );
+            const { data } = await res.json();
+            this.renderGifs(data);
+        } catch {
+            this.gifGrid.innerHTML = '<div class="chat-gif-status">Search failed</div>';
+        }
+    }
+
+    renderGifs(gifs) {
+        if (!gifs || gifs.length === 0) {
+            this.gifGrid.innerHTML = '<div class="chat-gif-status">No results</div>';
+            return;
+        }
+        this.gifGrid.innerHTML = '';
+        gifs.forEach((gif) => {
+            const preview = gif.images.fixed_height_small;
+            const full = gif.images.fixed_height;
+            if (!preview || !full) return;
+
+            // Strip tracking query params so the stored URL stays short + clean
+            const sendUrl = stripQuery(full.url);
+
+            const img = document.createElement('img');
+            img.src = preview.url;
+            img.className = 'chat-gif-item';
+            img.loading = 'lazy';
+            img.width = preview.width || 120;
+            img.height = preview.height || 90;
+            img.addEventListener('click', () => this.sendGif(sendUrl));
+            this.gifGrid.appendChild(img);
+        });
+    }
+
+    sendGif(url) {
+        const ws = window.pixelCanvas && window.pixelCanvas.ws;
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            this.showToast('Not connected — try again in a moment');
+            return;
+        }
+        ws.send(JSON.stringify({ type: 'chat_send', body: `[gif:${url}]` }));
+        this.closeGifPicker();
+    }
+
     playPop() {
         if (this.muted) return;
         const now = Date.now();
@@ -330,11 +443,26 @@ class ChatPanel {
 }
 
 function renderBody(str) {
+    // GIF token — entire body is [gif:https://media*.giphy.com/...]
+    const gifMatch = str.match(/^\[gif:(https:\/\/media[0-9]*\.giphy\.com\/[^\]]+)\]$/);
+    if (gifMatch) {
+        const url = gifMatch[1];
+        return `<img src="${url}" class="chat-gif" alt="GIF" loading="lazy">`;
+    }
     // Escape HTML first (XSS safe), then highlight @mentions
     return escapeHtml(str).replace(
         /@([\w-]+)/g,
         '<span class="chat-mention">@$1</span>'
     );
+}
+
+function stripQuery(url) {
+    try {
+        const u = new URL(url);
+        return u.origin + u.pathname;
+    } catch {
+        return url;
+    }
 }
 
 function escapeHtml(str) {
