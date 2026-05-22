@@ -56,8 +56,8 @@
     position: absolute;
     bottom: 72px;
     right: 0;
-    width: 360px;
-    height: 460px;
+    width: 420px;
+    height: 560px;
     background-color: var(--bg-secondary);
     border: 1.5px solid var(--border-light);
     border-radius: var(--radius-xl);

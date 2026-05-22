@@ -286,6 +286,15 @@ class ChatPanel {
 
         this.messagesEl.appendChild(el);
 
+        // GIF images start at 0 height until loaded — re-scroll when they load
+        // so the bottom doesn't shift up after the image paints.
+        const gif = el.querySelector('img.chat-gif');
+        if (gif && !gif.complete) {
+            gif.addEventListener('load', () => {
+                if (this.stickyBottom) this.scrollToBottom();
+            }, { once: true });
+        }
+
         if (!isHistory) {
             if (this.stickyBottom || isOwn) this.scrollToBottom();
             if (!isOwn) {
