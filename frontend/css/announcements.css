@@ -1,0 +1,197 @@
+/* =========================================================
+   Floating action button group (info + announcements)
+   ========================================================= */
+
+.fab-group {
+    position: fixed;
+    top: 68px;
+    left: 14px;
+    z-index: 55;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.fab-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(139, 92, 246, 0.18);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgba(109, 72, 184, 0.55);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+    transition:
+        background var(--transition-fast) var(--smooth),
+        border-color var(--transition-fast) var(--smooth),
+        color var(--transition-fast) var(--smooth),
+        transform var(--transition-fast) var(--spring);
+}
+
+.fab-btn:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(139, 92, 246, 0.35);
+    color: rgba(109, 72, 184, 0.85);
+    transform: scale(1.07);
+}
+
+.fab-btn:active {
+    transform: scale(0.95);
+}
+
+.fab-btn.active {
+    background: rgba(237, 233, 254, 0.85);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: rgb(109, 72, 184);
+}
+
+/* =========================================================
+   Announcements panel
+   ========================================================= */
+
+.announcements-panel {
+    position: fixed;
+    top: 158px; /* below both FABs: 68 + 36 + 7 + 36 + 11 */
+    left: 14px;
+    z-index: 54;
+    width: 320px;
+    max-height: min(520px, calc(100vh - 90px));
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(139, 92, 246, 0.18);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255,255,255,0.6) inset;
+    animation: ann-pop 0.22s var(--spring);
+    transform-origin: top left;
+    overflow: hidden;
+}
+
+@keyframes ann-pop {
+    from { opacity: 0; transform: scale(0.92) translateY(-6px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.announcements-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.12);
+    flex-shrink: 0;
+}
+
+.announcements-header span {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(109, 72, 184, 0.7);
+}
+
+.announcements-close {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: none;
+    color: rgba(109, 72, 184, 0.45);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    transition: color var(--transition-fast), background var(--transition-fast);
+}
+.announcements-close:hover {
+    color: rgba(109, 72, 184, 0.9);
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.announcements-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px 0 8px;
+}
+
+.ann-item {
+    padding: 12px 14px;
+}
+
+.ann-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.ann-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary, #333);
+    flex: 1;
+}
+
+.ann-date {
+    font-size: 0.72rem;
+    color: rgba(109, 72, 184, 0.5);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ann-body {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--text-secondary, #555);
+}
+
+.ann-body p {
+    margin: 0 0 6px;
+}
+.ann-body p:last-child { margin-bottom: 0; }
+
+.ann-body ul {
+    margin: 4px 0 6px;
+    padding-left: 16px;
+}
+.ann-body li {
+    margin-bottom: 3px;
+}
+
+.ann-body strong {
+    color: var(--text-primary, #333);
+    font-weight: 600;
+}
+
+.ann-divider {
+    height: 1px;
+    background: rgba(139, 92, 246, 0.08);
+    margin: 0 14px;
+}
+
+.ann-loading {
+    padding: 20px 14px;
+    font-size: 0.82rem;
+    color: rgba(109, 72, 184, 0.5);
+    font-style: italic;
+    text-align: center;
+}
+
+/* ── Mobile: panel goes full-width below the buttons ──── */
+@media (max-width: 480px) {
+    .announcements-panel {
+        left: 10px;
+        right: 10px;
+        width: auto;
+        top: 158px;
+    }
+}
