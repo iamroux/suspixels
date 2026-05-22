@@ -16,7 +16,9 @@ class ChatPanel {
         this.loginLink = document.getElementById('chat-login-link');
         this.toastEl = document.getElementById('chat-toast');
         this.unreadEl = document.querySelector('.chat-unread');
+        this.loadingEl = document.getElementById('chat-loading');
 
+        this.historyLoaded = false;
         this.unreadCount = 0;
         this.muted = localStorage.getItem('chatMuted') === '1';
         this.lastSoundAt = 0;
@@ -223,6 +225,8 @@ class ChatPanel {
     }
 
     renderHistory(messages) {
+        this.historyLoaded = true;
+        this.loadingEl.style.display = 'none';
         this.messagesEl.querySelectorAll('.chat-message').forEach((el) => el.remove());
         this.recentIds.clear();
         messages.forEach((m) => this.appendMessage(m, { isHistory: true }));
@@ -285,6 +289,7 @@ class ChatPanel {
     }
 
     updateEmptyState() {
+        if (!this.historyLoaded) return;
         const has = !!this.messagesEl.querySelector('.chat-message');
         this.emptyEl.style.display = has ? 'none' : 'block';
     }

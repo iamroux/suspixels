@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="css/modals.css?v=10">
     <link rel="stylesheet" href="css/profile.css?v=10">
     <link rel="stylesheet" href="css/palettes.css?v=10">
-    <link rel="stylesheet" href="css/chat.css?v=11">
+    <link rel="stylesheet" href="css/chat.css?v=12">
     <link rel="stylesheet" href="css/responsive.css?v=13">
     <link rel="stylesheet" href="css/loaders.css?v=12">
     <link rel="stylesheet" href="css/tour.css?v=10">
@@ -494,7 +494,8 @@
             </div>
         </div>
         <div class="chat-messages" id="chat-messages">
-            <div class="chat-empty" id="chat-empty">No messages yet — say hi!</div>
+            <div class="chat-loading" id="chat-loading">Loading older messages…</div>
+            <div class="chat-empty" id="chat-empty" style="display:none">No messages yet — say hi!</div>
         </div>
         <div class="chat-toast" id="chat-toast" hidden></div>
         <div class="chat-input" id="chat-input-wrap">
@@ -663,7 +664,7 @@
     <script src="js/pixel-canvas.drawing.js?v=6"></script>
     <script src="js/pixel-canvas.network.js?v=5"></script>
     <script src="js/pixel-canvas.palettes.js?v=3"></script>
-    <script src="js/chat-panel.js?v=3"></script>
+    <script src="js/chat-panel.js?v=4"></script>
     <script src="js/app.js?v=3"></script>
 </body>
 

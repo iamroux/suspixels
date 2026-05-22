@@ -418,3 +418,30 @@
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Loading state ────────────────────────────────────── */
+.chat-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 16px;
+    color: var(--lavender-400, #a78bca);
+    font-size: 0.82rem;
+    font-style: italic;
+}
+
+.chat-loading::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--lavender-200, #ddd6fe);
+    border-top-color: var(--lavender-500, #8b5cf6);
+    border-radius: 50%;
+    animation: chat-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes chat-spin {
+    to { transform: rotate(360deg); }
+}
