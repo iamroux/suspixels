@@ -57,7 +57,7 @@
 
 .announcements-panel {
     position: fixed;
-    top: 158px; /* below both FABs: 68 + 36 + 7 + 36 + 11 */
+    top: 202px; /* below all 3 FABs: 68 + 36 + 7 + 36 + 7 + 36 + 12 */
     left: 14px;
     z-index: 54;
     width: 320px;
@@ -192,6 +192,138 @@
         left: 10px;
         right: 10px;
         width: auto;
-        top: 158px;
+        top: 158px; /* only 2 FABs visible on mobile */
     }
+}
+
+/* ── Hide keyboard-shortcut FAB + panel on touch/mobile ── */
+@media (max-width: 768px) {
+    #help-fab,
+    #help-panel {
+        display: none !important;
+    }
+}
+
+/* =========================================================
+   Help / keyboard-shortcuts panel
+   ========================================================= */
+
+.help-panel {
+    position: fixed;
+    top: 202px; /* same anchor as announcements panel */
+    left: 14px;
+    z-index: 54;
+    width: 280px;
+    max-height: min(460px, calc(100vh - 220px));
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(139, 92, 246, 0.18);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255,255,255,0.6) inset;
+    animation: ann-pop 0.22s var(--spring);
+    transform-origin: top left;
+    overflow: hidden;
+}
+
+.help-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.12);
+}
+
+.help-header span {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(109, 72, 184, 0.7);
+}
+
+.help-close {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: none;
+    color: rgba(109, 72, 184, 0.45);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    transition: color var(--transition-fast), background var(--transition-fast);
+}
+.help-close:hover {
+    color: rgba(109, 72, 184, 0.9);
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.help-table {
+    width: 100%;
+    border-collapse: collapse;
+    flex: 1;
+    overflow-y: auto;
+    display: block;
+}
+
+.help-table tbody tr {
+    border-bottom: 1px solid rgba(139, 92, 246, 0.06);
+}
+.help-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.help-table tbody {
+    display: block;
+    padding: 4px 0 8px;
+}
+
+.help-table tbody tr {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.help-table td {
+    padding: 7px 0;
+    font-size: 0.82rem;
+    color: var(--text-secondary, #555);
+    vertical-align: middle;
+}
+
+.help-table td:first-child {
+    width: auto;
+    white-space: nowrap;
+    padding-left: 14px;
+    flex-shrink: 0;
+}
+
+.help-table td:last-child {
+    padding-right: 14px;
+}
+
+kbd {
+    display: inline-block;
+    padding: 2px 7px;
+    font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgba(109, 72, 184, 0.85);
+    background: rgba(237, 233, 254, 0.7);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 5px;
+    box-shadow: 0 1px 0 rgba(139, 92, 246, 0.15);
+    line-height: 1.4;
+}
+
+.help-hint {
+    font-size: 0.72rem;
+    color: rgba(109, 72, 184, 0.45);
+    font-style: italic;
 }
