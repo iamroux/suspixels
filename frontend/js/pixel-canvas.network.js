@@ -51,7 +51,7 @@ window.PixelCanvas.prototype.connectWebSocket = function() {
             this.startHeartbeat();
             if (this._hideColdStartBanner) this._hideColdStartBanner();
             if (this._wsEverConnected) {
-                this.loadPixels();
+                this.loadPixels({ noCache: true });
             }
             this._wsEverConnected = true;
         };
@@ -225,7 +225,8 @@ window.PixelCanvas.prototype.downloadSnapshot = async function() {
 
 };
 
-window.PixelCanvas.prototype.loadPixels = async function() {
+window.PixelCanvas.prototype.loadPixels = async function({ noCache = false } = {}) {
+        const cache = noCache ? 'no-store' : 'default';
         const hideLoader = () => {
             if (this._hideColdStartBanner) this._hideColdStartBanner();
             const loader = document.getElementById('startup-loader');
@@ -247,7 +248,7 @@ window.PixelCanvas.prototype.loadPixels = async function() {
 
         // PNG fires in background — renders as soon as it loads (typically before JSON)
         let pngRendered = false;
-        fetch(`${this.getApiBaseUrl()}/api/pixels/snapshot`)
+        fetch(`${this.getApiBaseUrl()}/api/pixels/snapshot`, { cache })
             .then(r => r.ok ? r.blob() : Promise.reject())
             .then(blob => new Promise((resolve, reject) => {
                 const url = URL.createObjectURL(blob);
@@ -269,13 +270,13 @@ window.PixelCanvas.prototype.loadPixels = async function() {
 
         // Await compact JSON to populate interaction Map (click-to-inspect, pending changes)
         try {
-            let response = await fetch(`${this.getApiBaseUrl()}/api/pixels/compact`);
+            let response = await fetch(`${this.getApiBaseUrl()}/api/pixels/compact`, { cache });
             let pixels;
             let isCompact = true;
             if (response.ok) {
                 pixels = await response.json();
             } else {
-                response = await fetch(`${this.getApiBaseUrl()}/api/pixels`);
+                response = await fetch(`${this.getApiBaseUrl()}/api/pixels`, { cache });
                 pixels = await response.json();
                 isCompact = false;
             }
