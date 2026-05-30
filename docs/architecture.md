@@ -6,6 +6,7 @@
 - **Frontend:** Vanilla JS + HTML5 Canvas, deployed on Vercel
 - **Database:** PostgreSQL on Neon (via TypeORM)
 - **Cache:** Redis Cloud 30MB
+- **Backups:** Vercel Blob (weekly DB dumps, see [Deployment](DEPLOYMENT.md))
 
 ## Request Flow
 
@@ -14,6 +15,7 @@ Browser
   → GET /api/pixels/snapshot  → PNG (in-process cache, 60s TTL, built from Redis pixel_grid)
   → GET /api/pixels/compact   → [x, y, color][] (interaction Map, runs in parallel)
   → WS wss://...              → real-time pixel_update / pixel_delete / batch_update events
+                              → chat_send / chat_message / chat_history (live chat)
   → POST /api/pixels/batch    → authenticated, writes to Redis buffer + pixel_grid hash
 ```
 
@@ -40,6 +42,7 @@ Cron (30s)        →  flushes pixel_buffer keys → upserts into PostgreSQL pix
 | `pixel_grid` | Hash | none | `"x,y" → "#RRGGBB"` — live canvas state, rebuilt from Postgres on server start or if empty |
 | `pixel_buffer:{x,y}` | String | 5m | Pending write, flushed to DB every 30s |
 | `leaderboard` | String | 30s | Cached top-10 JSON |
+| `chat:recent` | List | none | Recent chat messages, write-through to Postgres on each send |
 
 ## Database
 

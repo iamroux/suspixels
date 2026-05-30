@@ -7,4 +7,4 @@ Real-time collaborative pixel art canvas. 3000×3000 grid, live WebSocket update
 ---
 
 - [Architecture](docs/architecture.md)
-- [Deployment](docs/deployment.md)
+- [Deployment](docs/DEPLOYMENT.md)
