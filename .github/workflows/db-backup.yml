@@ -6,15 +6,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: none
 
 jobs:
   backup:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
       - name: Install postgresql-client-18
         run: |
           sudo apt-get install -y curl ca-certificates gnupg
@@ -28,18 +26,43 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
-          /usr/lib/postgresql/18/bin/pg_dump "$DATABASE_URL" | gzip > "db_backups/backup_$(date +%Y-%m-%d).sql.gz"
+          /usr/lib/postgresql/18/bin/pg_dump "$DATABASE_URL" | gzip > "backup_$(date +%Y-%m-%d).sql.gz"
 
-      - name: Keep only 3 most recent backups
+      - name: Upload to Vercel Blob and prune old backups
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
         run: |
-          ls -1 db_backups/backup_*.sql.gz 2>/dev/null | sort | head -n -3 | xargs -r rm
+          npm install --no-save @vercel/blob
+          node - <<'EOF'
+          const { put, list, del } = require('@vercel/blob');
+          const fs = require('fs');
 
-      - name: Commit and push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add db_backups/
-          git diff --staged --quiet && echo "No changes to commit" && exit 0
-          git commit -m "backup: $(date +%Y-%m-%d)"
-          git pull --rebase origin main
-          git push
+          async function main() {
+            // Find the dump file created in the previous step
+            const file = fs.readdirSync('.')
+              .find(f => f.startsWith('backup_') && f.endsWith('.sql.gz'));
+            if (!file) throw new Error('No backup file found');
+
+            // Upload
+            const data = fs.readFileSync(file);
+            const result = await put('db-backups/' + file, data, {
+              access: 'public',       // Hobby plan; URLs are UUID-based and unguessable
+              addRandomSuffix: false, // keep the date-based name predictable
+            });
+            console.log('Uploaded:', result.url);
+
+            // List all backups, sort oldest-first by pathname
+            const { blobs } = await list({ prefix: 'db-backups/backup_' });
+            blobs.sort((a, b) => a.pathname.localeCompare(b.pathname));
+            console.log('All backups:', blobs.map(b => b.pathname));
+
+            // Delete everything except the 3 most recent
+            const toDelete = blobs.slice(0, Math.max(0, blobs.length - 3));
+            for (const blob of toDelete) {
+              await del(blob.url);
+              console.log('Deleted:', blob.pathname);
+            }
+          }
+
+          main().catch(e => { console.error(e); process.exit(1); });
+          EOF
