@@ -46,7 +46,7 @@ jobs:
             // Upload
             const data = fs.readFileSync(file);
             const result = await put('db-backups/' + file, data, {
-              access: 'public',       // Hobby plan; URLs are UUID-based and unguessable
+              access: 'private',      // store is private — backups are not publicly accessible
               addRandomSuffix: false, // keep the date-based name predictable
             });
             console.log('Uploaded:', result.url);
