@@ -12,8 +12,9 @@
 //
 //   Mix freely — a paragraph followed by a list:
 //   **Bold text** works anywhere inline.
+//   [Link text](https://example.com) — opens in a new tab.
 //
-// Not supported (and not needed): headings, links, inline code, nested lists.
+// Not supported (and not needed): headings, inline code, nested lists.
 
 function renderMarkdown(str) {
     const escape = s => String(s ?? '')
@@ -21,7 +22,11 @@ function renderMarkdown(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 
-    const inline = s => escape(s).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    const inline = s => escape(s)
+        // [text](https://url) — links open in a new tab; http/https only
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+            '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
     const lines  = str.split('\n');
     const out    = [];
