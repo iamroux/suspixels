@@ -5,7 +5,7 @@
     "body": "Got a feature idea, or something you'd love to see on the canvas? We're listening.\n\n[Share your suggestions here](https://forms.gle/hUZbwn48edpLYWsX6)"
   },
   {
-    "date": "2025-05-22",
+    "date": "2026-05-22",
     "title": "Chat is live — with GIF support",
     "body": "The old third-party shoutbox is gone. We now have a fully native chat built into the app.\n\n**What's new:**\n\n- Real-time messages powered by the same WebSocket as the canvas\n- Send GIFs from Giphy using the GIF button\n- @mention other users — their name highlights in purple\n- Sound notification + unread badge when new messages arrive\n- Your app avatar and prestige badge show in chat\n- Guests can read chat but need to log in to send messages"
   }
