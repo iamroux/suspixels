@@ -154,6 +154,9 @@
 
 html {
     height: 100%;
+    /* Disable the browser's double-tap-to-zoom gesture (keeps pinch-zoom +
+       scrolling). Stops accidental page zoom from quick double taps on mobile. */
+    touch-action: manipulation;
 }
 
 body {
