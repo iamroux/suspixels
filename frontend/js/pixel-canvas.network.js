@@ -79,19 +79,34 @@ window.PixelCanvas.prototype.connectWebSocket = function() {
 
 window.PixelCanvas.prototype.handleWebSocketMessage = function(data) {
         switch (data.type) {
-            // Fix 16: backend now batches updates; handle them all at once
-            case 'batch_update':
+            // Backend batches updates. Paint them all to the offscreen, then
+            // repaint ONCE — updatePixel()/deletePixel() each call render(), so
+            // looping them caused one full-canvas repaint per pixel (a big CPU
+            // sink when several people draw at once).
+            case 'batch_update': {
+                let changed = false;
                 if (data.updates?.length) {
-                    data.updates.forEach(p => this.updatePixel(p.x, p.y, p.color, {
-                        color: p.color,
-                        insertedBy: p.insertedBy,
-                        updatedAt: p.updatedAt,
-                    }));
+                    data.updates.forEach(p => {
+                        // Don't clobber a pixel the user is mid-edit on.
+                        if (this.isEditMode && this.pendingChanges.has(`${p.x},${p.y}`)) return;
+                        this.updatePixelLocally(p.x, p.y, p.color, {
+                            color: p.color,
+                            insertedBy: p.insertedBy,
+                            updatedAt: p.updatedAt,
+                        });
+                        changed = true;
+                    });
                 }
                 if (data.deletes?.length) {
-                    data.deletes.forEach(d => this.deletePixel(d.x, d.y));
+                    data.deletes.forEach(d => {
+                        if (this.isEditMode && this.pendingChanges.has(`${d.x},${d.y}`)) return;
+                        this.deletePixelLocally(d.x, d.y);
+                        changed = true;
+                    });
                 }
+                if (changed) this.render();
                 break;
+            }
             // Keep individual cases for backward compatibility
             case 'pixel_update':
                 this.updatePixel(data.x, data.y, data.color, {

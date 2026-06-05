@@ -351,12 +351,23 @@ window.PixelCanvas.prototype.initUsersPopover = function() {
 
 window.PixelCanvas.prototype.renderRemoteCursor = function(userId, x, y, name, avatarStyle) {
     if (!this.remoteCursors) this.remoteCursors = new Map();
-    
+
     // x and y are exact grid coordinates (floats)
     this.remoteCursors.set(userId, { x, y, name, avatarStyle, lastSeen: Date.now() });
-    
-    // We update immediately in case the render loop isn't active
-    this.updateRemoteCursorsPositions();
+
+    // Coalesce to one DOM pass per frame. With several people moving, cursor
+    // messages arrive ~75/sec; updating synchronously per message thrashed the
+    // DOM. rAF caps it at one reposition per frame regardless of message rate.
+    this.scheduleCursorUpdate();
+};
+
+window.PixelCanvas.prototype.scheduleCursorUpdate = function() {
+    if (this._cursorUpdatePending) return;
+    this._cursorUpdatePending = true;
+    requestAnimationFrame(() => {
+        this._cursorUpdatePending = false;
+        this.updateRemoteCursorsPositions();
+    });
 };
 
 window.PixelCanvas.prototype.updateRemoteCursorsPositions = function() {
