@@ -302,6 +302,11 @@
     background:
         radial-gradient(120% 80% at 50% 50%, rgba(255, 250, 245, 0.4), transparent 70%);
     z-index: 10;
+    /* Hand all touch gestures to the app's JS (pan + pinch-zoom). Without this
+       Android Chrome treats a canvas pinch as browser page-zoom, scaling the
+       fixed header/toolbar off-screen. touch-action does NOT inherit, so it
+       must be set here, not just on <html>. */
+    touch-action: none;
 }
 
 #pixel-canvas {
@@ -310,6 +315,7 @@
     left: 0;
     image-rendering: pixelated;
     cursor: crosshair;
+    touch-action: none;
 }
 
 .canvas-container.panning #pixel-canvas {
