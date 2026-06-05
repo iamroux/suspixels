@@ -324,15 +324,6 @@ export class WebsocketGateway
         return;
       }
     }
-    const rl = await this.chatService.checkRateLimit(info.userId);
-    if (!rl.ok) {
-      this.sendToClient(client, {
-        type: 'chat_error',
-        code: 'rate_limited',
-        retryAfter: rl.retryAfter,
-      });
-      return;
-    }
     let prestigeCount = 0;
     try {
       prestigeCount = await this.usersService.getPixelCount(info.userId);

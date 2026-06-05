@@ -209,9 +209,6 @@ class ChatPanel {
 
     handleError(msg) {
         switch (msg.code) {
-            case 'rate_limited':
-                this.showToast(`Slow down — try again in ${msg.retryAfter || 1}s`);
-                break;
             case 'too_long':
                 this.showToast('Message too long');
                 break;

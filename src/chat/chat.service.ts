@@ -7,14 +7,7 @@ import { REDIS_CLIENT } from '../redis/redis.constants';
 import { ChatMessage } from './entities/chat-message.entity';
 
 export const CHAT_HISTORY_LIMIT = 200;
-export const CHAT_RATE_LIMIT_COUNT = 5;
-export const CHAT_RATE_LIMIT_WINDOW_SEC = 10;
 const REDIS_RECENT_KEY = 'chat:recent';
-const REDIS_RATE_KEY = (userId: string) => `chat:rl:${userId}`;
-
-export type ChatRateLimitResult =
-  | { ok: true }
-  | { ok: false; retryAfter: number };
 
 export interface ChatMessagePayload {
   id: string;
@@ -110,19 +103,6 @@ export class ChatService {
     } catch (e: any) {
       this.logger.warn(`Redis del failed (non-fatal): ${e?.message ?? e}`);
     }
-  }
-
-  async checkRateLimit(userId: string): Promise<ChatRateLimitResult> {
-    const key = REDIS_RATE_KEY(userId);
-    const count = await this.redis.incr(key);
-    if (count === 1) {
-      await this.redis.expire(key, CHAT_RATE_LIMIT_WINDOW_SEC);
-    }
-    if (count > CHAT_RATE_LIMIT_COUNT) {
-      const ttl = await this.redis.ttl(key);
-      return { ok: false, retryAfter: Math.max(ttl, 1) };
-    }
-    return { ok: true };
   }
 
   @Cron(CronExpression.EVERY_HOUR)
