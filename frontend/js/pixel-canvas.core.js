@@ -72,7 +72,21 @@ class PixelCanvas {
         // Auth state (token lives in httpOnly cookie — never in JS)
         this.user = JSON.parse(localStorage.getItem('pixelUser') || 'null');
         this.palettes = [];
-        this.userName = this.user ? this.user.name : (localStorage.getItem('pixelUserName') || '');
+        if (this.user) {
+            this.userName = this.user.name;
+        } else {
+            // Guests only ever legitimately have a "Guest_xxx" name. Ignore (and
+            // clear) any stale pixelUserName left by older builds that stored the
+            // account name there — otherwise a logged-out profile masquerades as
+            // that account's guest (e.g. shows up as "iamroux (Guest)").
+            const storedGuest = localStorage.getItem('pixelUserName') || '';
+            if (storedGuest && !storedGuest.startsWith('Guest_')) {
+                localStorage.removeItem('pixelUserName');
+                this.userName = '';
+            } else {
+                this.userName = storedGuest;
+            }
+        }
 
         if (!this.user && !this.userName) {
             this.initAuthModal();

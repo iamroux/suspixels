@@ -190,7 +190,22 @@ export class WebsocketGateway
             await this.afterIdentify(client);
             return;
           }
-          const name = `${msg.name?.trim().slice(0, 40) || 'Guest'} (Guest)`;
+          let base = msg.name?.trim().slice(0, 40) || '';
+          // A guest may not wear a registered account's name — prevents
+          // impersonation and stops stale-localStorage profiles from showing
+          // up as "<owner> (Guest)". Fall back to a random guest tag.
+          let taken = false;
+          if (base) {
+            try {
+              taken = !!(await this.usersService.findByName(base));
+            } catch {
+              // lookup failure is non-fatal; treat as not taken
+            }
+          }
+          if (!base || taken) {
+            base = 'Guest_' + Math.random().toString(36).slice(2, 8);
+          }
+          const name = `${base} (Guest)`;
           const avatarStyle = msg.avatarStyle || 'bottts';
           this.logger.log(`Guest identified: ${name}`);
           this.clients.set(client, { userId: null, name, avatarStyle });
