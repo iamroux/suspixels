@@ -42,11 +42,11 @@ Cron (30s)        →  flushes pixel_buffer keys → upserts into PostgreSQL pix
 | `pixel_grid` | Hash | none | `"x,y" → "#RRGGBB"` — live canvas state, rebuilt from Postgres on server start or if empty |
 | `pixel_buffer:{x,y}` | String | 5m | Pending write, flushed to DB every 30s |
 | `leaderboard` | String | 30s | Cached top-10 JSON |
-| `chat:recent` | List | none | Recent chat messages, write-through to Postgres on each send |
+| `chat:recent` | List | none | Chat's sole store — newest 200 messages (capped via `LTRIM`). No DB; resets only if Redis is wiped |
 
 ## Database
 
-PostgreSQL on Neon. Durable backup for canvas state and user data. Written to async via cron, never on the hot read path.
+PostgreSQL on Neon. Stores canvas state, users, and palettes — written async via cron, never on the hot read path. Chat is **not** in Postgres; it lives entirely in Redis (`chat:recent`).
 
 ## Canvas Constraints
 
