@@ -26,7 +26,12 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
-          /usr/lib/postgresql/18/bin/pg_dump "$DATABASE_URL" | gzip > "backup_$(date +%Y-%m-%d).sql.gz"
+          # --schema=public: Supabase has internal auth/storage/realtime schemas
+          # we must NOT back up. --no-owner/--no-privileges: keep dumps portable
+          # so a restore doesn't choke on provider-specific roles.
+          /usr/lib/postgresql/18/bin/pg_dump "$DATABASE_URL" \
+            --schema=public --no-owner --no-privileges \
+            | gzip > "backup_$(date +%Y-%m-%d).sql.gz"
 
       - name: Upload to Vercel Blob and prune old backups
         env:
