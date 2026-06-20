@@ -25,7 +25,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.usersService.findById(payload.sub);
-    return { userId: payload.sub, email: payload.email, name: user ? user.name : payload.name };
+    // The token's signature already proves identity. Refresh the display name
+    // from the DB when reachable, but never fail auth on a DB outage — fall
+    // back to the name embedded in the token. Keeps canvas + auth working when
+    // Postgres is briefly unavailable.
+    let name = payload.name;
+    try {
+      const user = await this.usersService.findById(payload.sub);
+      if (user) name = user.name;
+    } catch {
+      // DB unavailable — use the token's name
+    }
+    return { userId: payload.sub, email: payload.email, name };
   }
 }

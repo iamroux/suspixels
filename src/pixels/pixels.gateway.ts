@@ -138,12 +138,23 @@ export class WebsocketGateway
       if (token) {
         try {
           const payload = this.jwtService.verify(token);
-          const user = await this.usersService.findById(payload.sub);
-          initialName = user ? user.name : payload.name;
+          // Valid signature = logged in, regardless of DB availability.
           initialUserId = payload.sub ?? null;
-          initialAvatarStyle = user
-            ? user.avatarStyle
-            : payload.avatarStyle || null;
+          initialName = payload.name;
+          initialAvatarStyle = payload.avatarStyle || null;
+          // Refresh name/avatar from the DB best-effort; a DB outage must not
+          // downgrade a validly-authenticated user to a guest.
+          try {
+            const user = await this.usersService.findById(payload.sub);
+            if (user) {
+              initialName = user.name;
+              initialAvatarStyle = user.avatarStyle;
+            }
+          } catch (e) {
+            this.logger.warn(
+              `WS cookie name refresh failed (using token name): ${e.message}`,
+            );
+          }
           this.logger.log(`Authenticated WS client via cookie: ${initialName}`);
         } catch (e) {
           this.logger.warn(`Invalid WS cookie token: ${e.message}`);
@@ -162,9 +173,26 @@ export class WebsocketGateway
         const msg = JSON.parse(raw.toString());
         if (msg?.type === 'identify') {
           if (msg.token) {
+            let payload: any = null;
             try {
-              const payload = this.jwtService.verify(msg.token);
-              const user = await this.usersService.findById(payload.sub);
+              // Signature check only — throws solely on an invalid/expired token.
+              payload = this.jwtService.verify(msg.token);
+            } catch {
+              payload = null; // invalid token → fall through to guest handling
+            }
+            if (payload) {
+              // Valid token = logged in. Refresh name/avatar from the DB
+              // best-effort; on a DB outage fall back to the token's name so
+              // the user stays logged in instead of being dropped to a guest
+              // (which silently blocked chat during the Postgres outage).
+              let user: any = null;
+              try {
+                user = await this.usersService.findById(payload.sub);
+              } catch (e: any) {
+                this.logger.warn(
+                  `WS identify name refresh failed (using token name): ${e?.message ?? e}`,
+                );
+              }
               const verified = user
                 ? user.name
                 : payload.name || msg.name?.trim().slice(0, 40) || 'User';
@@ -181,8 +209,6 @@ export class WebsocketGateway
               });
               await this.afterIdentify(client);
               return;
-            } catch {
-              // token invalid — fall through
             }
           }
           // Cookie already authed us — re-broadcast without downgrading to guest.
