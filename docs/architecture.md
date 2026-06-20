@@ -4,7 +4,7 @@
 
 - **Backend:** NestJS (TypeScript), deployed on Render
 - **Frontend:** Vanilla JS + HTML5 Canvas, deployed on Vercel
-- **Database:** PostgreSQL on Neon (via TypeORM)
+- **Database:** PostgreSQL on Supabase (via TypeORM)
 - **Cache:** Redis Cloud 30MB
 - **Backups:** Vercel Blob (weekly DB dumps, see [Deployment](DEPLOYMENT.md))
 
@@ -46,7 +46,7 @@ Cron (30s)        →  flushes pixel_buffer keys → upserts into PostgreSQL pix
 
 ## Database
 
-PostgreSQL on Neon. Stores canvas state, users, and palettes — written async via cron, never on the hot read path. Chat is **not** in Postgres; it lives entirely in Redis (`chat:recent`).
+PostgreSQL on Supabase (Session pooler). Stores canvas state, users, and palettes — written async via cron, never on the hot read path. Chat is **not** in Postgres; it lives entirely in Redis (`chat:recent`).
 
 ## Canvas Constraints
 
